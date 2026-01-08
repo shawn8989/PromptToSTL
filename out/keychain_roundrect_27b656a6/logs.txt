@@ -1,0 +1,23 @@
+
+WARNING: Ignoring unknown function 'textmetrics' in file keychain.scad, line 48
+WARNING: max() parameter could not be converted in file keychain.scad, line 55
+WARNING: Ignoring unknown function 'textmetrics' in file keychain.scad, line 49
+WARNING: max() parameter could not be converted in file keychain.scad, line 56
+WARNING: undefined operation (number / undefined) in file keychain.scad, line 57
+WARNING: undefined operation (number / undefined) in file keychain.scad, line 58
+WARNING: min() parameter could not be converted in file keychain.scad, line 59
+WARNING: Unable to convert scale([undef, undef, 1]) parameter to a number, a vec3 or vec2 of numbers or a number in file keychain.scad, line 70
+Fontconfig warning: "/Applications/OpenSCAD-2021.01.app/Contents/Resources/fonts/fonts.conf", line 84: unknown element "blank"
+Geometries in cache: 13
+Geometry cache size in bytes: 480656
+CGAL Polyhedrons in cache: 2
+CGAL cache size in bytes: 2503816
+Total rendering time: 0:00:13.167
+   Top level object is a 3D object:
+   Simple:        yes
+   Vertices:     1595
+   Halfedges:    4792
+   Edges:        2396
+   Halffacets:   1612
+   Facets:        806
+   Volumes:         2
