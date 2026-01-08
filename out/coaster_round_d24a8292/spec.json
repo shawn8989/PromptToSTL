@@ -1,0 +1,15 @@
+{
+  "template_id": "coaster_round",
+  "params": {
+    "text": "EDGE TECH",
+    "emboss": 1,
+    "diameter": 90.0,
+    "th": 4.0,
+    "rim": 0,
+    "rim_w": 3.0,
+    "rim_h": 1.0499999999999998,
+    "text_size": 12.0,
+    "text_height": 1.0,
+    "pad": 6.0
+  }
+}

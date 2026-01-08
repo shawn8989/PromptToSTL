@@ -1,0 +1,65 @@
+{
+  "template_id": "coaster_round",
+  "label": "Coaster (Round)",
+  "scad_file": "model.scad",
+  "params": {
+    "text": {
+      "type": "string",
+      "default": "EDGE TECH"
+    },
+    "emboss": {
+      "type": "int",
+      "default": 1,
+      "min": 0,
+      "max": 1
+    },
+    "diameter": {
+      "type": "number",
+      "default": 90,
+      "min": 50,
+      "max": 150
+    },
+    "th": {
+      "type": "number",
+      "default": 4,
+      "min": 2,
+      "max": 10
+    },
+    "rim": {
+      "type": "int",
+      "default": 1,
+      "min": 0,
+      "max": 1
+    },
+    "rim_w": {
+      "type": "number",
+      "default": 3,
+      "min": 1,
+      "max": 10
+    },
+    "rim_h": {
+      "type": "number",
+      "default": 1.2,
+      "min": 0.6,
+      "max": 3
+    },
+    "text_size": {
+      "type": "number",
+      "default": 12,
+      "min": 6,
+      "max": 30
+    },
+    "text_height": {
+      "type": "number",
+      "default": 1.0,
+      "min": 0.6,
+      "max": 3
+    },
+    "pad": {
+      "type": "number",
+      "default": 6,
+      "min": 2,
+      "max": 20
+    }
+  }
+}
