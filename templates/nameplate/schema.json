@@ -1,0 +1,93 @@
+{
+  "template_id": "nameplate",
+  "label": "Nameplate",
+  "scad_file": "model.scad",
+  "params": {
+    "line1": {
+      "type": "string",
+      "default": "SHUNATHON"
+    },
+    "line2": {
+      "type": "string",
+      "default": "OWENS"
+    },
+    "emboss": {
+      "type": "int",
+      "default": 1,
+      "min": 0,
+      "max": 1
+    },
+    "w": {
+      "type": "number",
+      "default": 100,
+      "min": 40,
+      "max": 220
+    },
+    "h": {
+      "type": "number",
+      "default": 30,
+      "min": 15,
+      "max": 100
+    },
+    "th": {
+      "type": "number",
+      "default": 4,
+      "min": 2,
+      "max": 12
+    },
+    "corner_r": {
+      "type": "number",
+      "default": 5,
+      "min": 0,
+      "max": 25
+    },
+    "text_size": {
+      "type": "number",
+      "default": 14,
+      "min": 6,
+      "max": 50
+    },
+    "text_height": {
+      "type": "number",
+      "default": 1.2,
+      "min": 0.6,
+      "max": 4
+    },
+    "pad_x": {
+      "type": "number",
+      "default": 8,
+      "min": 2,
+      "max": 40
+    },
+    "pad_y": {
+      "type": "number",
+      "default": 6,
+      "min": 2,
+      "max": 40
+    },
+    "line_gap": {
+      "type": "number",
+      "default": 10,
+      "min": 4,
+      "max": 25
+    },
+    "holes": {
+      "type": "int",
+      "default": 0,
+      "min": 0,
+      "max": 1
+    },
+    "hole_d": {
+      "type": "number",
+      "default": 4,
+      "min": 2,
+      "max": 10
+    },
+    "hole_offset": {
+      "type": "number",
+      "default": 12,
+      "min": 6,
+      "max": 60
+    }
+  }
+}
