@@ -103,6 +103,11 @@ with colL:
         else:
             st.warning(f"Unknown type {t} for {k}")
 
+    uploaded_svg = None
+    if template_id in {"keychain_roundrect", "coaster_round"}:
+        st.subheader("Emblem")
+        uploaded_svg = st.file_uploader("SVG emblem", type=["svg"])
+
     layout_debug = None
     text_box = schema.get("text_box") or {}
     if text_box and "text_size" in params:
@@ -282,6 +287,12 @@ if build:
     stamp = int(time.time() * 1000)
     stl_path = job_dir / f"model_{stamp}.stl"
     log_path = job_dir / "logs.txt"
+
+    if template_id in {"keychain_roundrect", "coaster_round"} and uploaded_svg is not None:
+        emblem_path = job_dir / "emblem.svg"
+        emblem_path.write_bytes(uploaded_svg.getvalue())
+        params["emblem_enabled"] = 1
+        params["emblem_path"] = str(emblem_path.resolve())
 
     spec_path.write_text(json.dumps(
         {"template_id": template_id, "params": params},

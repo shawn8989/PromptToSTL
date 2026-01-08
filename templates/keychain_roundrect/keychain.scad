@@ -7,6 +7,13 @@ line2 = "";
 line_gap = 8;
 offset_x = 0;
 offset_y = 0;
+emblem_enabled = 0;
+emblem_path = "";
+emblem_scale = 0.25;
+emblem_x = 12;
+emblem_y = 0;
+emblem_rot = 0;
+emblem_depth = 1.2;
 emboss = 1;           // 1=emboss, 0=engrave
 
 // Base (mm)
@@ -49,6 +56,16 @@ module line_text_3d(s, y) {
       text(s, size=text_size, halign="center", valign="center");
 }
 
+module emblem_3d(z) {
+  if (emblem_enabled == 1 && emblem_path != "") {
+    translate([emblem_x, emblem_y, z])
+      rotate([0, 0, emblem_rot])
+        scale([emblem_scale, emblem_scale, 1])
+          linear_extrude(height=emblem_depth)
+            import(emblem_path);
+  }
+}
+
 difference() {
   base_plate();
 
@@ -81,3 +98,5 @@ if (emboss == 1) {
       }
     }
 }
+
+emblem_3d(th);

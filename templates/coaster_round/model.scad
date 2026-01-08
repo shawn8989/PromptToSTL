@@ -12,6 +12,13 @@ pad = 6;
 line_gap = 10;
 offset_x = 0;
 offset_y = 0;
+emblem_enabled = 0;
+emblem_path = "";
+emblem_scale = 0.25;
+emblem_x = 0;
+emblem_y = 0;
+emblem_rot = 0;
+emblem_depth = 1.2;
 
 module base() {
   cylinder(d=diameter, h=th, $fn=128);
@@ -45,11 +52,22 @@ module top_text_3d() {
     }
 }
 
+module emblem_3d(z) {
+  if (emblem_enabled == 1 && emblem_path != "") {
+    translate([emblem_x, emblem_y, z])
+      rotate([0, 0, emblem_rot])
+        scale([emblem_scale, emblem_scale, 1])
+          linear_extrude(height=emblem_depth)
+            import(emblem_path);
+  }
+}
+
 if (emboss == 1) {
   union() {
     base();
     rim_ring();
     top_text_3d();
+    emblem_3d(th);
   }
 } else {
   difference() {

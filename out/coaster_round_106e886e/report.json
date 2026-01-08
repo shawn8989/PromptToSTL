@@ -1,0 +1,21 @@
+{
+  "ok": true,
+  "bounds_min": [
+    -45.0,
+    -45.0,
+    0.0
+  ],
+  "bounds_max": [
+    45.0,
+    45.0,
+    5.2
+  ],
+  "size_xyz_mm": [
+    90.0,
+    90.0,
+    5.2
+  ],
+  "watertight": true,
+  "faces": 5836,
+  "verts": 2920
+}

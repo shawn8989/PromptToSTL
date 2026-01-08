@@ -1,0 +1,24 @@
+{
+  "template_id": "keychain_roundrect",
+  "params": {
+    "line1": "YOUR",
+    "line2": "NAME",
+    "emboss": 1,
+    "w": 80.0,
+    "h": 24.0,
+    "th": 4.0,
+    "text_size": 12.0,
+    "line_gap": 0.5999999999999996,
+    "pad_x": 8.0,
+    "pad_y": 5.0,
+    "emblem_enabled": 0,
+    "emblem_path": "",
+    "emblem_scale": 0.25,
+    "emblem_x": 12.0,
+    "emblem_y": 0.0,
+    "emblem_rot": 0.0,
+    "emblem_depth": 1.2,
+    "offset_x": 10.75,
+    "offset_y": 0.0
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "template_id": "coaster_round",
+  "params": {
+    "line1": "EDGE TECHm",
+    "line2": "oksdf",
+    "emboss": 1,
+    "diameter": 90.0,
+    "th": 4.0,
+    "rim": 1,
+    "rim_w": 3.0,
+    "rim_h": 1.2,
+    "text_size": 11.5,
+    "line_gap": 10.0,
+    "text_height": 1.0,
+    "pad": 6.0,
+    "offset_x": 0.0,
+    "offset_y": 0.0
+  }
+}
