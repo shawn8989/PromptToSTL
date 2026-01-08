@@ -2,6 +2,13 @@
   "template_id": "nameplate",
   "label": "Nameplate",
   "scad_file": "model.scad",
+  "max_lines": 3,
+  "text_box": {
+    "box_w": "w - 2*pad_x",
+    "box_h": "h - 2*pad_y",
+    "offset_x": 0,
+    "offset_y": 0
+  },
   "params": {
     "line1": {
       "type": "string",
@@ -10,6 +17,10 @@
     "line2": {
       "type": "string",
       "default": "OWENS"
+    },
+    "line3": {
+      "type": "string",
+      "default": ""
     },
     "emboss": {
       "type": "int",

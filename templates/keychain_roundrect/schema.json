@@ -2,13 +2,22 @@
   "template_id": "keychain_roundrect",
   "label": "Keychain (Rounded Rectangle)",
   "scad_file": "keychain.scad",
+  "max_lines": 2,
+  "text_box": {
+    "box_w": "w - 2*pad_x - 2*(8 + 5.5/2)",
+    "box_h": "h - 2*pad_y",
+    "offset_x": "8 + 5.5/2",
+    "offset_y": 0
+  },
   "params": {
-    "name": { "type": "string", "default": "YOUR NAME" },
+    "line1": { "type": "string", "default": "YOUR NAME" },
+    "line2": { "type": "string", "default": "" },
     "emboss": { "type": "int", "default": 1, "min": 0, "max": 1 },
     "w": { "type": "number", "default": 80, "min": 40, "max": 140 },
     "h": { "type": "number", "default": 24, "min": 15, "max": 60 },
     "th": { "type": "number", "default": 4, "min": 2, "max": 10 },
     "text_size": { "type": "number", "default": 12, "min": 6, "max": 30 },
+    "line_gap": { "type": "number", "default": 8, "min": 4, "max": 25 },
     "pad_x": { "type": "number", "default": 8, "min": 2, "max": 20 },
     "pad_y": { "type": "number", "default": 5, "min": 2, "max": 20 }
   }

@@ -1,8 +1,12 @@
-// keychain.scad (auto-fit text)
+// keychain.scad (multi-line text)
 // CLI example:
-// openscad -o out.stl -D 'name="SHUNATHON OWENS"' -D 'emboss=1' keychain.scad
+// openscad -o out.stl -D 'line1="SHUNATHON"' -D 'line2="OWENS"' -D 'emboss=1' keychain.scad
 
-name = "YOUR NAME";
+line1 = "YOUR NAME";
+line2 = "";
+line_gap = 8;
+offset_x = 0;
+offset_y = 0;
 emboss = 1;           // 1=emboss, 0=engrave
 
 // Base (mm)
@@ -15,7 +19,7 @@ hole_d = 5.5;
 hole_offset_x = 8;
 
 // Text (mm)
-text_size = 12;       // "desired" size; will be scaled down if needed
+text_size = 12;
 text_height = 1.2;
 pad_x = 8;            // left/right margin inside plate
 pad_y = 5;            // top/bottom margin inside plate
@@ -39,41 +43,10 @@ module keychain_hole() {
     cylinder(h=th + 2, d=hole_d, center=false);
 }
 
-// Create text as 2D so we can measure it
-module text_2d(s) {
-  text(s, size=text_size, halign="center", valign="center");
-}
-
-// Compute bounding box of text (2D)
-function tx(s) = let(bb = textmetrics(s, size=text_size)) bb[0];
-function ty(s) = let(bb = textmetrics(s, size=text_size)) bb[1];
-
-// Fit scale so text stays inside plate area
-function fit_scale(s) =
-  let(av_w = w - 2*pad_x,
-      av_h = h - 2*pad_y,
-      t_w = max(1, tx(s)),
-      t_h = max(1, ty(s)),
-      sx = av_w / t_w,
-      sy = av_h / t_h)
-  min(1, sx, sy);
-
-module fitted_text(s) {
-  sc = fit_scale(s);
-
-  // Clip to safe area so it never "runs off" the plate
-  intersection() {
-    // Safe area box
-    square([w - 2*pad_x, h - 2*pad_y], center=true);
-
-    // Scaled text
-    scale([sc, sc, 1]) text_2d(s);
-  }
-}
-
-module label_text_3d(s) {
-  linear_extrude(height=text_height)
-    fitted_text(s);
+module line_text_3d(s, y) {
+  translate([offset_x, offset_y + y, 0])
+    linear_extrude(height=text_height)
+      text(s, size=text_size, halign="center", valign="center");
 }
 
 difference() {
@@ -85,12 +58,26 @@ difference() {
   // engrave
   if (emboss == 0) {
     translate([0,0, th - text_height])
-      label_text_3d(name);
+      union() {
+        if (line2 == "") {
+          line_text_3d(line1, 0);
+        } else {
+          line_text_3d(line1, line_gap / 2);
+          line_text_3d(line2, -line_gap / 2);
+        }
+      }
   }
 }
 
 // emboss
 if (emboss == 1) {
   translate([0,0, th])
-    label_text_3d(name);
+    union() {
+      if (line2 == "") {
+        line_text_3d(line1, 0);
+      } else {
+        line_text_3d(line1, line_gap / 2);
+        line_text_3d(line2, -line_gap / 2);
+      }
+    }
 }

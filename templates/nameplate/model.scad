@@ -1,5 +1,6 @@
 line1 = "SHUNATHON";
 line2 = "OWENS";
+line3 = "";
 emboss = 1;
 w = 100;
 h = 30;
@@ -10,14 +11,11 @@ text_height = 1.2;
 pad_x = 8;
 pad_y = 6;
 line_gap = 10;
+offset_x = 0;
+offset_y = 0;
 holes = 0;
 hole_d = 4;
 hole_offset = 12;
-
-approx_char_w = text_size * 0.6;
-
-function line_scale(line) =
-  min(1, (w - 2 * pad_x) / max(1, len(line) * approx_char_w));
 
 module rounded_rect_2d(width, height, r) {
   r_clamped = min(r, min(width, height) / 2);
@@ -43,18 +41,21 @@ module hole_pair() {
 }
 
 module text_line(str, y_offset) {
-  translate([0, y_offset, th])
+  translate([offset_x, offset_y + y_offset, th])
     linear_extrude(height=text_height)
-      scale([line_scale(str), line_scale(str), 1])
-        text(str, size=text_size, halign="center", valign="center");
+      text(str, size=text_size, halign="center", valign="center");
 }
 
 module text_block() {
-  if (line2 == "") {
+  if (line2 == "" && line3 == "") {
     text_line(line1, 0);
-  } else {
+  } else if (line3 == "") {
     text_line(line1, line_gap / 2);
     text_line(line2, -line_gap / 2);
+  } else {
+    text_line(line1, line_gap);
+    text_line(line2, 0);
+    text_line(line3, -line_gap);
   }
 }
 

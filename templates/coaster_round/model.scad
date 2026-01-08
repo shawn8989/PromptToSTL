@@ -1,4 +1,5 @@
-text = "EDGE TECH";
+line1 = "EDGE TECH";
+line2 = "";
 emboss = 1;
 diameter = 90;
 th = 4;
@@ -8,11 +9,9 @@ rim_h = 1.2;
 text_size = 12;
 text_height = 1.0;
 pad = 6;
-
-approx_char_w = text_size * 0.6;
-estimated_width = len(text) * approx_char_w;
-available_width = diameter - 2 * pad;
-scale_factor = min(1, available_width / max(1, estimated_width));
+line_gap = 10;
+offset_x = 0;
+offset_y = 0;
 
 module base() {
   cylinder(d=diameter, h=th, $fn=128);
@@ -30,9 +29,20 @@ module rim_ring() {
 
 module top_text_3d() {
   translate([0, 0, th])
-    linear_extrude(height=text_height)
-      scale([scale_factor, scale_factor, 1])
-        text(text, size=text_size, halign="center", valign="center");
+    union() {
+      if (line2 == "") {
+        translate([offset_x, offset_y, 0])
+          linear_extrude(height=text_height)
+            text(line1, size=text_size, halign="center", valign="center");
+      } else {
+        translate([offset_x, offset_y + line_gap / 2, 0])
+          linear_extrude(height=text_height)
+            text(line1, size=text_size, halign="center", valign="center");
+        translate([offset_x, offset_y - line_gap / 2, 0])
+          linear_extrude(height=text_height)
+            text(line2, size=text_size, halign="center", valign="center");
+      }
+    }
 }
 
 if (emboss == 1) {

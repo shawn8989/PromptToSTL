@@ -2,10 +2,21 @@
   "template_id": "coaster_round",
   "label": "Coaster (Round)",
   "scad_file": "model.scad",
+  "max_lines": 2,
+  "text_box": {
+    "box_w": "diameter - 2*pad",
+    "box_h": "diameter - 2*pad",
+    "offset_x": 0,
+    "offset_y": 0
+  },
   "params": {
-    "text": {
+    "line1": {
       "type": "string",
       "default": "EDGE TECH"
+    },
+    "line2": {
+      "type": "string",
+      "default": ""
     },
     "emboss": {
       "type": "int",
@@ -48,6 +59,12 @@
       "default": 12,
       "min": 6,
       "max": 30
+    },
+    "line_gap": {
+      "type": "number",
+      "default": 10,
+      "min": 4,
+      "max": 25
     },
     "text_height": {
       "type": "number",
