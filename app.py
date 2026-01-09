@@ -92,7 +92,7 @@ with colL:
 
         if t == "string":
             params[k] = st.text_input(k, value=str(default) if default is not None else "")
-        elif t == "int":
+        elif t in {"int", "integer"}:
             params[k] = st.number_input(k, value=int(default), step=1,
                                         min_value=int(spec.get("min", -10**9)),
                                         max_value=int(spec.get("max", 10**9)))

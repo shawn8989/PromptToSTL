@@ -13,6 +13,13 @@ pad_y = 6;
 line_gap = 10;
 offset_x = 0;
 offset_y = 0;
+emblem_enabled = 0;
+emblem_path = "";
+emblem_scale = 0.25;
+emblem_x = 0;
+emblem_y = 0;
+emblem_rot = 0;
+emblem_depth = 1.2;
 holes = 0;
 hole_d = 4;
 hole_offset = 12;
@@ -59,11 +66,27 @@ module text_block() {
   }
 }
 
+module emblem_2d() {
+  translate([emblem_x, emblem_y, 0])
+    rotate([0, 0, emblem_rot])
+      scale([emblem_scale, emblem_scale, 1])
+        import(emblem_path);
+}
+
+module emblem_3d(z) {
+  if (emblem_enabled == 1 && emblem_path != "") {
+    translate([0, 0, z])
+      linear_extrude(height=emblem_depth)
+        emblem_2d();
+  }
+}
+
 if (emboss == 1) {
   difference() {
     union() {
       base_plate();
       text_block();
+      emblem_3d(th);
     }
     hole_pair();
   }
