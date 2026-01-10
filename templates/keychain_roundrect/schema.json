@@ -26,6 +26,7 @@
     "emblem_x": { "type": "number", "default": 12, "min": -100, "max": 100 },
     "emblem_y": { "type": "number", "default": 0, "min": -100, "max": 100 },
     "emblem_rot": { "type": "number", "default": 0, "min": -180, "max": 180 },
+    "emblem_mode": { "type": "integer", "default": 1, "min": 0, "max": 1 },
     "emblem_depth": { "type": "number", "default": 1.2, "min": 0.4, "max": 4 }
   }
 }

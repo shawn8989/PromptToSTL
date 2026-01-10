@@ -19,6 +19,7 @@ emblem_scale = 0.25;
 emblem_x = 0;
 emblem_y = 0;
 emblem_rot = 0;
+emblem_mode = 1;
 emblem_depth = 1.2;
 holes = 0;
 hole_d = 4;
@@ -86,9 +87,14 @@ if (emboss == 1) {
     union() {
       base_plate();
       text_block();
-      emblem_3d(th);
+      if (emblem_mode == 1) {
+        emblem_3d(th);
+      }
     }
     hole_pair();
+    if (emblem_mode == 0) {
+      emblem_3d(th - emblem_depth);
+    }
   }
 } else {
   difference() {

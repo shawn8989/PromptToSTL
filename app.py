@@ -175,6 +175,8 @@ with colL:
     st.subheader("Build")
     job_name = st.text_input("Output name", value=f"{template_id}_{uuid.uuid4().hex[:8]}")
     build = st.button("Build STL", type="primary")
+    if build:
+        st.session_state["build_requested"] = True
 
 with colR:
     st.subheader("3D Preview")
@@ -279,7 +281,7 @@ with colR:
         st.info("No STL built yet. Click Build STL.")
     
 st.subheader("Output")
-if build:
+if st.session_state.pop("build_requested", False):
     job_dir = OUT_DIR / job_name
     job_dir.mkdir(parents=True, exist_ok=True)
 
@@ -322,10 +324,7 @@ if build:
                 with open(last_file, "rb") as f:
                     st.download_button("Download STL", f, file_name=last_file.name)
 
-        if hasattr(st, "rerun"):
-            st.rerun()
-        else:
-            st.experimental_rerun()
+        st.info("Build complete. Use Refresh preview if the viewer does not update.")
 
     except Exception as e:
         st.error(str(e))

@@ -13,6 +13,7 @@ emblem_scale = 0.25;
 emblem_x = 12;
 emblem_y = 0;
 emblem_rot = 0;
+emblem_mode = 1;
 emblem_depth = 1.2;
 emboss = 1;           // 1=emboss, 0=engrave
 
@@ -84,6 +85,10 @@ difference() {
         }
       }
   }
+
+  if (emblem_mode == 0) {
+    emblem_3d(th - emblem_depth);
+  }
 }
 
 // emboss
@@ -99,4 +104,6 @@ if (emboss == 1) {
     }
 }
 
-emblem_3d(th);
+if (emblem_mode == 1) {
+  emblem_3d(th);
+}

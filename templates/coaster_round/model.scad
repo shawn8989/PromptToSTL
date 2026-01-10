@@ -18,6 +18,7 @@ emblem_scale = 0.25;
 emblem_x = 0;
 emblem_y = 0;
 emblem_rot = 0;
+emblem_mode = 1;
 emblem_depth = 1.2;
 
 module base() {
@@ -67,7 +68,9 @@ if (emboss == 1) {
     base();
     rim_ring();
     top_text_3d();
-    emblem_3d(th);
+    if (emblem_mode == 1) {
+      emblem_3d(th);
+    }
   }
 } else {
   difference() {
@@ -76,5 +79,8 @@ if (emboss == 1) {
       rim_ring();
     }
     top_text_3d();
+    if (emblem_mode == 0) {
+      emblem_3d(th - emblem_depth);
+    }
   }
 }
