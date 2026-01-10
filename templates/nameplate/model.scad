@@ -82,24 +82,35 @@ module emblem_3d(z) {
   }
 }
 
+module base_body() {
+  linear_extrude(height=th)
+    rounded_rect_2d(w, h, corner_r);
+}
+
 if (emboss == 1) {
   difference() {
     union() {
       base_plate();
       text_block();
-      if (emblem_mode == 1) {
-        emblem_3d(th);
-      }
     }
     hole_pair();
     if (emblem_mode == 0) {
       emblem_3d(th - emblem_depth);
     }
   }
+  if (emblem_mode == 1) {
+    emblem_3d(th);
+  }
 } else {
   difference() {
     base_plate();
     hole_pair();
     text_block();
+    if (emblem_mode == 0) {
+      emblem_3d(th - emblem_depth);
+    }
+  }
+  if (emblem_mode == 1) {
+    emblem_3d(th);
   }
 }

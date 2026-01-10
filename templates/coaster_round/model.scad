@@ -63,10 +63,21 @@ module emblem_3d(z) {
   }
 }
 
-if (emboss == 1) {
+module base_body() {
   union() {
     base();
     rim_ring();
+  }
+}
+
+if (emboss == 1) {
+  union() {
+    difference() {
+      base_body();
+      if (emblem_mode == 0) {
+        emblem_3d(th - emblem_depth);
+      }
+    }
     top_text_3d();
     if (emblem_mode == 1) {
       emblem_3d(th);
@@ -74,13 +85,13 @@ if (emboss == 1) {
   }
 } else {
   difference() {
-    union() {
-      base();
-      rim_ring();
-    }
+    base_body();
     top_text_3d();
     if (emblem_mode == 0) {
       emblem_3d(th - emblem_depth);
     }
+  }
+  if (emblem_mode == 1) {
+    emblem_3d(th);
   }
 }

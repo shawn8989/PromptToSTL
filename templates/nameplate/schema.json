@@ -23,7 +23,7 @@
       "default": ""
     },
     "emboss": {
-      "type": "int",
+      "type": "integer",
       "default": 1,
       "min": 0,
       "max": 1
@@ -82,6 +82,40 @@
       "min": 4,
       "max": 25
     },
+    "text_box_w": {
+      "type": "number",
+      "default": 84,
+      "min": 0,
+      "max": 500
+    },
+    "text_box_h": {
+      "type": "number",
+      "default": 18,
+      "min": 0,
+      "max": 500
+    },
+    "text_box_offset_x": {
+      "type": "number",
+      "default": 0,
+      "min": -200,
+      "max": 200
+    },
+    "text_box_offset_y": {
+      "type": "number",
+      "default": 0,
+      "min": -200,
+      "max": 200
+    },
+    "emblem_snap": {
+      "type": "string",
+      "default": "custom"
+    },
+    "emblem_autocenter": {
+      "type": "integer",
+      "default": 1,
+      "min": 0,
+      "max": 1
+    },
     "emblem_enabled": {
       "type": "integer",
       "default": 0,
@@ -129,7 +163,7 @@
       "max": 4
     },
     "holes": {
-      "type": "int",
+      "type": "integer",
       "default": 0,
       "min": 0,
       "max": 1
