@@ -6,10 +6,13 @@ import uuid
 from pathlib import Path
 import streamlit as st
 
+from dotenv import load_dotenv
+
 from src.core.catalog import list_templates, load_template
 from src.core.layout import layout_text
 from src.core.runner import run_openscad
 from src.core.validate import validate_stl
+from src.intent.router import route_intent
 from streamlit_stl import stl_from_file
 import trimesh
 try:
@@ -23,6 +26,8 @@ DEFAULT_OPENSCAD = "openscad"  # on mac: usually in PATH
 OUT_DIR = Path(__file__).resolve().parent / "out"
 PLACEHOLDER_STL = Path(__file__).resolve().parent / "templates" / "placeholder.stl"
 TEXT_MARGIN = 0.9
+
+load_dotenv()
 
 
 def eval_expr(value, params):
@@ -69,6 +74,7 @@ if "preview_nonce" not in st.session_state:
 with st.sidebar:
     st.header("Engine")
     openscad_exe = st.text_input("OpenSCAD executable", value=DEFAULT_OPENSCAD)
+    mode = st.radio("Mode", ["Manual", "Describe it"], horizontal=True)
 
 templates = list_templates()
 if not templates:
@@ -76,19 +82,70 @@ if not templates:
     st.stop()
 
 colL, colR = st.columns([1, 1], gap="large")
+uploaded_svg = None
 
 with colL:
+    if mode == "Describe it":
+        st.subheader("Describe it")
+        description = st.text_area("Describe your object", height=120)
+        if st.button("Generate Proposal"):
+            template_map = {}
+            for tid in templates:
+                schema, _ = load_template(tid)
+                template_map[tid] = schema
+            proposal = route_intent(description, template_map)
+            st.session_state["intent_proposal"] = proposal
+            if hasattr(st, "rerun"):
+                st.rerun()
+            else:
+                st.experimental_rerun()
+
+        proposal = st.session_state.get("intent_proposal")
+        if proposal:
+            proposal_template = proposal.get("template_id", "")
+            proposal_schema, _ = load_template(proposal_template) if proposal_template in templates else (None, None)
+            if proposal_schema:
+                st.write(f"Template: {proposal_schema.get('label', proposal_template)}")
+            else:
+                st.write(f"Template: {proposal_template}")
+            st.json(proposal.get("params", {}))
+            notes = proposal.get("notes", "")
+            if notes:
+                st.info(notes)
+
+            if st.button("Apply to Form"):
+                st.session_state["intent_template_id"] = proposal.get("template_id")
+                st.session_state["intent_params"] = proposal.get("params", {})
+                st.session_state["template_select"] = proposal.get("template_id")
+            if st.button("Regenerate"):
+                template_map = {}
+                for tid in templates:
+                    schema, _ = load_template(tid)
+                    template_map[tid] = schema
+                proposal = route_intent(description, template_map)
+                st.session_state["intent_proposal"] = proposal
+                if hasattr(st, "rerun"):
+                    st.rerun()
+                else:
+                    st.experimental_rerun()
+
     st.subheader("Template")
-    template_id = st.selectbox("Choose template", templates)
+    intent_template_id = st.session_state.get("intent_template_id")
+    if "template_select" not in st.session_state and intent_template_id in templates:
+        st.session_state["template_select"] = intent_template_id
+    template_id = st.selectbox("Choose template", templates, key="template_select")
     schema, scad_path = load_template(template_id)
 
     st.caption(schema.get("label", template_id))
 
     st.subheader("Parameters")
     params = {}
+    intent_params = st.session_state.get("intent_params") if intent_template_id == template_id else None
     for k, spec in schema["params"].items():
         t = spec["type"]
         default = spec.get("default")
+        if intent_params and k in intent_params:
+            default = intent_params.get(k)
 
         if t == "string":
             params[k] = st.text_input(k, value=str(default) if default is not None else "")
@@ -103,8 +160,7 @@ with colL:
         else:
             st.warning(f"Unknown type {t} for {k}")
 
-    uploaded_svg = None
-    if template_id in {"keychain_roundrect", "coaster_round"}:
+    if template_id in {"keychain_roundrect", "coaster_round", "nameplate"}:
         st.subheader("Emblem")
         uploaded_svg = st.file_uploader("SVG emblem", type=["svg"])
 
@@ -157,6 +213,78 @@ with colL:
             st.warning(layout["warning"])
         elif layout.get("truncated"):
             st.warning("Text was truncated to fit the text box.")
+
+    emblem_snap = params.get("emblem_snap") if isinstance(params.get("emblem_snap"), str) else None
+    if emblem_snap and emblem_snap != "custom":
+        box_w = float(params.get("text_box_w", 0.0))
+        box_h = float(params.get("text_box_h", 0.0))
+        box_off_x = float(params.get("text_box_offset_x", 0.0))
+        box_off_y = float(params.get("text_box_offset_y", 0.0))
+        margin = min(box_w, box_h) * 0.1 if min(box_w, box_h) > 0 else 0.0
+
+        def snap_pos(kind):
+            if kind == "center":
+                return 0.0, 0.0
+            if kind == "left":
+                return -box_w / 2 + margin, 0.0
+            if kind == "right":
+                return box_w / 2 - margin, 0.0
+            if kind == "above_text":
+                return 0.0, box_h / 2 - margin
+            if kind == "below_text":
+                return 0.0, -box_h / 2 + margin
+            if kind == "top_left":
+                return -box_w / 2 + margin, box_h / 2 - margin
+            if kind == "top_right":
+                return box_w / 2 - margin, box_h / 2 - margin
+            if kind == "bottom_left":
+                return -box_w / 2 + margin, -box_h / 2 + margin
+            if kind == "bottom_right":
+                return box_w / 2 - margin, -box_h / 2 + margin
+            return 0.0, 0.0
+
+        snap_x, snap_y = snap_pos(emblem_snap)
+        autocenter = int(params.get("emblem_autocenter", 1)) == 1
+        if emblem_snap == "center" and autocenter:
+            snap_x, snap_y = 0.0, 0.0
+        params["emblem_x"] = snap_x + box_off_x
+        params["emblem_y"] = snap_y + box_off_y
+
+    emblem_snap = params.get("emblem_snap") if isinstance(params.get("emblem_snap"), str) else None
+    if emblem_snap and emblem_snap != "custom":
+        box_w = float(params.get("text_box_w", 0.0))
+        box_h = float(params.get("text_box_h", 0.0))
+        box_off_x = float(params.get("text_box_offset_x", 0.0))
+        box_off_y = float(params.get("text_box_offset_y", 0.0))
+        margin = min(box_w, box_h) * 0.1 if min(box_w, box_h) > 0 else 0.0
+
+        def snap_pos(kind):
+            if kind == "center":
+                return 0.0, 0.0
+            if kind == "left":
+                return -box_w / 2 + margin, 0.0
+            if kind == "right":
+                return box_w / 2 - margin, 0.0
+            if kind == "above_text":
+                return 0.0, box_h / 2 - margin
+            if kind == "below_text":
+                return 0.0, -box_h / 2 + margin
+            if kind == "top_left":
+                return -box_w / 2 + margin, box_h / 2 - margin
+            if kind == "top_right":
+                return box_w / 2 - margin, box_h / 2 - margin
+            if kind == "bottom_left":
+                return -box_w / 2 + margin, -box_h / 2 + margin
+            if kind == "bottom_right":
+                return box_w / 2 - margin, -box_h / 2 + margin
+            return 0.0, 0.0
+
+        snap_x, snap_y = snap_pos(emblem_snap)
+        autocenter = int(params.get("emblem_autocenter", 1)) == 1
+        if emblem_snap == "center" and autocenter:
+            snap_x, snap_y = 0.0, 0.0
+        params["emblem_x"] = snap_x + box_off_x
+        params["emblem_y"] = snap_y + box_off_y
 
     with st.expander("Layout Debug", expanded=False):
         if layout_debug:
@@ -290,7 +418,7 @@ if st.session_state.pop("build_requested", False):
     stl_path = job_dir / f"model_{stamp}.stl"
     log_path = job_dir / "logs.txt"
 
-    if template_id in {"keychain_roundrect", "coaster_round"} and uploaded_svg is not None:
+    if template_id in {"keychain_roundrect", "coaster_round", "nameplate"} and uploaded_svg is not None:
         emblem_path = job_dir / "emblem.svg"
         emblem_path.write_bytes(uploaded_svg.getvalue())
         params["emblem_enabled"] = 1
