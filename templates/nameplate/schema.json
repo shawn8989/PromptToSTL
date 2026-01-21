@@ -82,6 +82,12 @@
       "min": 4,
       "max": 25
     },
+    "text_block_center_y": {
+      "type": "number",
+      "default": 0,
+      "min": -50,
+      "max": 50
+    },
     "text_box_w": {
       "type": "number",
       "default": 84,

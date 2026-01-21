@@ -175,44 +175,54 @@ with colL:
         offset_x = eval_expr(text_box.get("offset_x", 0), params)
         offset_y = eval_expr(text_box.get("offset_y", 0), params)
 
-        raw_lines = []
-        for key in ("line1", "line2", "line3"):
-            if key in params:
-                raw_lines.append(str(params.get(key, "")))
-        if not raw_lines and "text" in params:
-            raw_lines = [str(params.get("text", ""))]
-
-        line_gap = float(params.get("line_gap", 0))
-        layout = layout_text(
-            raw_lines,
-            max_lines=max_lines,
-            box_w_mm=box_w,
-            box_h_mm=box_h,
-            max_text_size=max_text_size,
-            min_text_size=min_text_size,
-            margin=TEXT_MARGIN,
-            line_gap_mm=line_gap,
-        )
-        layout_debug = layout
-
-        params["text_size"] = layout["text_size"]
         params["offset_x"] = offset_x
         params["offset_y"] = offset_y
-        if "line_gap" in params and "line_gap_mm" in layout:
-            params["line_gap"] = layout["line_gap_mm"]
 
-        lines = layout["lines"] + ["", "", ""]
-        if "line1" in params:
-            params["line1"] = lines[0]
-        if "line2" in params:
-            params["line2"] = lines[1]
-        if "line3" in params:
-            params["line3"] = lines[2]
+        if template_id == "nameplate":
+            layout_debug = {
+                "lines": [params.get("line1", ""), params.get("line2", ""), params.get("line3", "")],
+                "text_size": params.get("text_size"),
+                "offsets_y": [],
+                "warning": "",
+                "truncated": False,
+            }
+        else:
+            raw_lines = []
+            for key in ("line1", "line2", "line3"):
+                if key in params:
+                    raw_lines.append(str(params.get(key, "")))
+            if not raw_lines and "text" in params:
+                raw_lines = [str(params.get("text", ""))]
 
-        if layout.get("warning"):
-            st.warning(layout["warning"])
-        elif layout.get("truncated"):
-            st.warning("Text was truncated to fit the text box.")
+            line_gap = float(params.get("line_gap", 0))
+            layout = layout_text(
+                raw_lines,
+                max_lines=max_lines,
+                box_w_mm=box_w,
+                box_h_mm=box_h,
+                max_text_size=max_text_size,
+                min_text_size=min_text_size,
+                margin=TEXT_MARGIN,
+                line_gap_mm=line_gap,
+            )
+            layout_debug = layout
+
+            params["text_size"] = layout["text_size"]
+            if "line_gap" in params and "line_gap_mm" in layout:
+                params["line_gap"] = layout["line_gap_mm"]
+
+            lines = layout["lines"] + ["", "", ""]
+            if "line1" in params:
+                params["line1"] = lines[0]
+            if "line2" in params:
+                params["line2"] = lines[1]
+            if "line3" in params:
+                params["line3"] = lines[2]
+
+            if layout.get("warning"):
+                st.warning(layout["warning"])
+            elif layout.get("truncated"):
+                st.warning("Text was truncated to fit the text box.")
 
     emblem_snap = params.get("emblem_snap") if isinstance(params.get("emblem_snap"), str) else None
     if emblem_snap and emblem_snap != "custom":
