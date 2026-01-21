@@ -82,6 +82,26 @@
       "min": 4,
       "max": 25
     },
+    "text_align": {
+      "type": "string",
+      "default": "center"
+    },
+    "text_anchor_y": {
+      "type": "string",
+      "default": "center"
+    },
+    "text_margin_x": {
+      "type": "number",
+      "default": 8,
+      "min": 0,
+      "max": 50
+    },
+    "text_margin_y": {
+      "type": "number",
+      "default": 6,
+      "min": 0,
+      "max": 50
+    },
     "text_block_center_y": {
       "type": "number",
       "default": 0,
@@ -111,6 +131,12 @@
       "default": 0,
       "min": -200,
       "max": 200
+    },
+    "debug": {
+      "type": "integer",
+      "default": 0,
+      "min": 0,
+      "max": 1
     },
     "emblem_snap": {
       "type": "string",

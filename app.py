@@ -148,7 +148,20 @@ with colL:
             default = intent_params.get(k)
 
         if t == "string":
-            params[k] = st.text_input(k, value=str(default) if default is not None else "")
+            if template_id == "nameplate" and k == "text_align":
+                params[k] = st.selectbox(
+                    k,
+                    ["left", "center", "right"],
+                    index=["left", "center", "right"].index(str(default)) if default in {"left", "center", "right"} else 1,
+                )
+            elif template_id == "nameplate" and k == "text_anchor_y":
+                params[k] = st.selectbox(
+                    k,
+                    ["top", "center", "bottom"],
+                    index=["top", "center", "bottom"].index(str(default)) if default in {"top", "center", "bottom"} else 1,
+                )
+            else:
+                params[k] = st.text_input(k, value=str(default) if default is not None else "")
         elif t in {"int", "integer"}:
             params[k] = st.number_input(k, value=int(default), step=1,
                                         min_value=int(spec.get("min", -10**9)),

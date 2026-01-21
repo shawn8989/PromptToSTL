@@ -11,9 +11,17 @@ text_height = 1.2;
 pad_x = 8;
 pad_y = 6;
 line_gap = 10;
+text_align = "center";
+text_anchor_y = "center";
+text_margin_x = 8;
+text_margin_y = 6;
 text_block_center_y = 0;
 offset_x = 0;
 offset_y = 0;
+text_box_w = 84;
+text_box_h = 18;
+text_box_offset_x = 0;
+text_box_offset_y = 0;
 debug = 0;
 emblem_enabled = 0;
 emblem_path = "";
@@ -64,52 +72,71 @@ function line_index(l1, l2, l3, which) =
 function line_count(l1, l2, l3) =
   (l1 != "" ? 1 : 0) + (l2 != "" ? 1 : 0) + (l3 != "" ? 1 : 0);
 
+function safe_left() = -(w / 2) + text_margin_x;
+function safe_right() = (w / 2) - text_margin_x;
+function safe_top() = (h / 2) - text_margin_y;
+function safe_bottom() = -(h / 2) + text_margin_y;
+
+function x_anchor() =
+  text_align == "left" ? safe_left() :
+  text_align == "right" ? safe_right() : 0;
+
+function halign_mode() =
+  text_align == "left" ? "left" :
+  text_align == "right" ? "right" : "center";
+
+function block_center_y(count) =
+  text_anchor_y == "top" ? (safe_top() - ((count - 1) * line_gap) / 2) :
+  text_anchor_y == "bottom" ? (safe_bottom() + ((count - 1) * line_gap) / 2) : 0;
+
+function effective_gap() =
+  max(line_gap, text_size * 1.15);
+
 function offset_for_index(idx, count) =
   count <= 1 ? 0 :
-  count == 2 ? (idx == 0 ? line_gap / 2 : -line_gap / 2) :
-  (idx == 0 ? line_gap : (idx == 1 ? 0 : -line_gap));
+  count == 2 ? (idx == 0 ? effective_gap() / 2 : -effective_gap() / 2) :
+  (idx == 0 ? effective_gap() : (idx == 1 ? 0 : -effective_gap()));
 
 function estimate_factor(s) =
-  len(s) * 0.6;
+  len(s) * 0.70;
 
 function fit_scale(s) =
-  let(safe_w = (w - 2 * pad_x) * 0.92,
+  let(safe_w = (text_box_w > 0 ? text_box_w : (safe_right() - safe_left())) * 0.85,
       est_w = max(1, text_size * estimate_factor(s)))
   min(1, safe_w / est_w);
 
 module text_line_scaled(str, y_offset) {
-  translate([offset_x, offset_y + y_offset, th])
+  safe_w = (text_box_w > 0 ? text_box_w : (safe_right() - safe_left())) * 0.85;
+  est_w = max(1, text_size * estimate_factor(str));
+  scale_line = fit_scale(str);
+  if (debug == 1) {
+    echo("safe_w", safe_w);
+    echo("line", str);
+    echo("est_w", est_w);
+    echo("scale", scale_line);
+    echo("effective_gap", effective_gap());
+  }
+  translate([x_anchor() + offset_x, offset_y + y_offset, th])
     linear_extrude(height=text_height)
-      scale([fit_scale(str), fit_scale(str), 1])
-        text(str, size=text_size, halign="center", valign="center");
+      scale([scale_line, scale_line, 1])
+        text(str, size=text_size, halign=halign_mode(), valign="center");
 }
 
 module text_block() {
   count = line_count(line1, line2, line3);
+  center_y = block_center_y(count) + text_block_center_y;
   idx1 = line_index(line1, line2, line3, 1);
   idx2 = line_index(line1, line2, line3, 2);
   idx3 = line_index(line1, line2, line3, 3);
 
   if (line1 != "") {
-    if (debug == 1) {
-      echo("line1_safe_w", (w - 2 * pad_x) * 0.92);
-      echo("line1_est_w", max(1, text_size * estimate_factor(line1)));
-    }
-    text_line_scaled(line1, text_block_center_y + offset_for_index(idx1, count));
+    text_line_scaled(line1, center_y + offset_for_index(idx1, count));
   }
   if (line2 != "") {
-    if (debug == 1) {
-      echo("line2_safe_w", (w - 2 * pad_x) * 0.92);
-      echo("line2_est_w", max(1, text_size * estimate_factor(line2)));
-    }
-    text_line_scaled(line2, text_block_center_y + offset_for_index(idx2, count));
+    text_line_scaled(line2, center_y + offset_for_index(idx2, count));
   }
   if (line3 != "") {
-    if (debug == 1) {
-      echo("line3_safe_w", (w - 2 * pad_x) * 0.92);
-      echo("line3_est_w", max(1, text_size * estimate_factor(line3)));
-    }
-    text_line_scaled(line3, text_block_center_y + offset_for_index(idx3, count));
+    text_line_scaled(line3, center_y + offset_for_index(idx3, count));
   }
 }
 
