@@ -1,61 +1,26 @@
 # PromptToSTL
 
-**Generate 3D-printable STL files from text-based descriptions and templates.**
+**Generate 3D-printable STL files from structured prompts and parametric templates.**
 
-PromptToSTL combines structured templates with OpenSCAD to create parametric 3D geometries. Designed as a local tool with AI extensibility, it supports interactive parameter editing, live previews, and STL validation.
+PromptToSTL is a local, template-driven tool that converts structured inputs into deterministic OpenSCAD models and exportable STL files. It is designed for reproducible 3D printing workflows with future AI-assisted routing.
 
-## Features
-- **Local Streamlit GUI**: Modify parameters via a dynamic interface.
-- **Template-based generation**: Builds using `.scad` + `.json` templates.
-- **Repeatable builds**: Deterministic outputs with versioning.
-- **Live 3D preview**: Auto-refreshed STL previews.
-- **Extensible**: AI-driven workflows with LangChain planned.
+## What It Does
+- Converts structured inputs into parametric 3D models
+- Uses OpenSCAD templates for deterministic geometry
+- Supports repeatable STL generation
+- Designed to run locally (no cloud dependency)
+- Built to be extended with AI-assisted prompt routing
 
 ## Tech Stack
-- **Python**: Streamlit, trimesh
-- **OpenSCAD**: Geometry definitions
-- **Streamlit-STL**: Live rendering
+- Python
+- OpenSCAD (CLI)
+- Streamlit (local UI)
+- Trimesh (validation, planned)
 
 ## Project Structure
 ```plaintext
-src/              # Core logic
-templates/        # Parameterized shape models
-docs/             # Architecture & design
-tests/            # Unit/validation tests
-.github/workflows # CI pipeline
-```
-
-## Setup Instructions
-### Requirements
-- Python ≥ 3.10
-- OpenSCAD (CLI accessible)
-- Libraries: `pip install -r requirements.txt`
-
-### Running the App
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-streamlit run app.py
-```
-- Visit the app at **http://localhost:8501**
-
-### Testing
-```bash
-pytest                      # Run unit tests
-ruff src/ tests/            # Linter checks
-```
-
-## Roadmap
-### Short Term
-- Add templates (coaster, nameplate)
-- Robust text layout handling
-- Overlay SVG logos into objects
-
-### Long Term
-- LangChain integration for AI-driven templates
-- Backend API for remote access
-- Image-to-STL pipelines with AI
-
-## Demo
-_TODO: Include screenshots of the Streamlit GUI and example STL generation._
+src/                # Core application logic
+templates/          # OpenSCAD templates + schemas
+docs/               # Architecture and design decisions
+tests/              # Test scaffolding (WIP)
+.github/workflows/  # CI configuration Running Locally
