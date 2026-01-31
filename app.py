@@ -70,6 +70,10 @@ st.title("PromptToSTL (Local GUI)")
 
 if "preview_nonce" not in st.session_state:
     st.session_state["preview_nonce"] = 0
+if "pending_build" not in st.session_state:
+    st.session_state["pending_build"] = False
+if "last_build_id" not in st.session_state:
+    st.session_state["last_build_id"] = 0
 
 with st.sidebar:
     st.header("Engine")
@@ -117,6 +121,11 @@ with colL:
                 st.session_state["intent_template_id"] = proposal.get("template_id")
                 st.session_state["intent_params"] = proposal.get("params", {})
                 st.session_state["template_select"] = proposal.get("template_id")
+                st.session_state["pending_build"] = True
+                if hasattr(st, "rerun"):
+                    st.rerun()
+                else:
+                    st.experimental_rerun()
             if st.button("Regenerate"):
                 template_map = {}
                 for tid in templates:
@@ -402,7 +411,7 @@ with colR:
             stl_from_file(
                 str(resolved_path),
                 height=500,
-                key=f"stl_{st.session_state['preview_nonce']}",
+                key=f"stl_preview_{st.session_state['last_build_id']}",
             )
         except Exception as e:
             st.error(f"streamlit_stl failed: {e}")
@@ -432,7 +441,9 @@ with colR:
         st.info("No STL built yet. Click Build STL.")
     
 st.subheader("Output")
-if st.session_state.pop("build_requested", False):
+build_requested = st.session_state.pop("build_requested", False) or st.session_state.get("pending_build", False)
+if build_requested:
+    st.session_state["pending_build"] = False
     job_dir = OUT_DIR / job_name
     job_dir.mkdir(parents=True, exist_ok=True)
 
@@ -455,6 +466,7 @@ if st.session_state.pop("build_requested", False):
     try:
         logs = run_openscad(openscad_exe, scad_path, stl_path, params)
         st.session_state["last_stl_path"] = str(stl_path)
+        st.session_state["last_build_id"] += 1
         st.session_state["preview_nonce"] += 1
         log_path.write_text(logs)
 
@@ -472,10 +484,17 @@ if st.session_state.pop("build_requested", False):
         if last_path:
             last_file = Path(last_path)
             if last_file.exists():
-                with open(last_file, "rb") as f:
-                    st.download_button("Download STL", f, file_name=last_file.name)
+                st.download_button(
+                    "Download STL",
+                    data=last_file.read_bytes(),
+                    file_name=last_file.name,
+                    mime="application/sla",
+                )
 
-        st.info("Build complete. Use Refresh preview if the viewer does not update.")
+        if hasattr(st, "rerun"):
+            st.rerun()
+        else:
+            st.experimental_rerun()
 
     except Exception as e:
         st.error(str(e))
