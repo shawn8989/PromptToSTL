@@ -6,12 +6,12 @@ PromptToSTL is a local, template-driven tool that turns structured inputs into d
 
 ![Pipeline overview](assets/pipeline.svg)
 
-## What It Does
-- Converts structured inputs into parametric 3D models
-- Uses OpenSCAD templates for deterministic geometry
-- Supports repeatable STL generation with validation
-- Runs locally (no cloud dependency for geometry)
-- Optional AI-assisted prompt routing for faster setup
+## Features
+- Local Streamlit UI for parameter editing and builds
+- Template-based generation using `.scad` + schema definitions
+- Deterministic geometry (OpenSCAD only, no AI meshes)
+- Live STL preview and basic validation
+- Optional AI-assisted prompt routing (Describe it mode)
 
 ## Example Output
 ![STL preview](assets/model_preview.svg)
@@ -19,7 +19,7 @@ PromptToSTL is a local, template-driven tool that turns structured inputs into d
 ## Quickstart
 ### Requirements
 - Python 3.10+
-- OpenSCAD (CLI accessible)
+- OpenSCAD (CLI accessible in `PATH`)
 
 ### Install
 ```bash
@@ -44,6 +44,18 @@ Open http://localhost:8501 in your browser.
 - Keychain (rounded rectangle)
 - Coaster (round)
 - Nameplate (multiline text layout)
+
+## How It Works
+1. A template schema defines parameters and constraints.
+2. The UI renders inputs and passes values to OpenSCAD.
+3. OpenSCAD generates deterministic geometry.
+4. The STL is previewed and validated locally.
+
+## Tech Stack
+- Python (Streamlit, trimesh)
+- OpenSCAD CLI
+- Streamlit-STL for live rendering
+- LangChain + OpenAI (optional prompt routing)
 
 ## Project Structure
 ```plaintext
