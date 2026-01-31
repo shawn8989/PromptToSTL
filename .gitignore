@@ -28,3 +28,6 @@ Thumbs.db
 .idea/
 Dockerfile.local
 docker-compose.override.yml
+!assets/
+!assets/*.svg
+!assets/*.png
