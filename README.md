@@ -1,112 +1,61 @@
 # PromptToSTL
 
-PromptToSTL is a local GUI tool for generating 3D-printable STL files from structured templates using OpenSCAD. It provides a reliable, repeatable pipeline with live preview, designed to scale from simple parametric objects (keychains, coasters, nameplates) to AI-assisted generation workflows later.
+**Generate 3D-printable STL files from text-based descriptions and templates.**
 
-This project prioritizes:
-- Deterministic geometry (no hallucinated meshes)
-- Local generation (no cloud dependency)
-- Print-safe outputs
-- Extensibility toward AI agents (LangChain) in later phases
+PromptToSTL combines structured templates with OpenSCAD to create parametric 3D geometries. Designed as a local tool with AI extensibility, it supports interactive parameter editing, live previews, and STL validation.
 
-FEATURES
+## Features
+- **Local Streamlit GUI**: Modify parameters via a dynamic interface.
+- **Template-based generation**: Builds using `.scad` + `.json` templates.
+- **Repeatable builds**: Deterministic outputs with versioning.
+- **Live 3D preview**: Auto-refreshed STL previews.
+- **Extensible**: AI-driven workflows with LangChain planned.
 
-- Template-based STL generation  
-  Each object is defined by a schema plus an OpenSCAD model.
-- Local Streamlit GUI  
-  Edit parameters and build interactively.
-- Repeatable builds  
-  Modify parameters and rebuild as many times as needed.
-- Live 3D preview  
-  Always-on STL preview with auto-refresh.
-- Versioned outputs  
-  Each build produces a uniquely named STL file.
-- STL validation  
-  Basic geometry checks using trimesh.
+## Tech Stack
+- **Python**: Streamlit, trimesh
+- **OpenSCAD**: Geometry definitions
+- **Streamlit-STL**: Live rendering
 
-CURRENT TEMPLATES
+## Project Structure
+```plaintext
+src/              # Core logic
+templates/        # Parameterized shape models
+docs/             # Architecture & design
+tests/            # Unit/validation tests
+.github/workflows # CI pipeline
+```
 
-- Keychain  
-  Text emboss or engrave, adjustable size and thickness.
-
-More templates planned: coaster, nameplate, plaques, lithophanes.
-
-PROJECT STRUCTURE
-
-PromptToSTL/
-- app.py                 Streamlit GUI
-- src/
-  - core/
-    - catalog.py         Template discovery
-    - runner.py          OpenSCAD execution
-    - validate.py        STL validation
-    - layout.py          Planned text/layout logic
-- templates/
-  - <template_id>/
-    - schema.json        Parameter definitions
-    - model.scad         OpenSCAD geometry
-- out/                   Generated STL files (gitignored)
-- .venv/
-
-REQUIREMENTS
-
-- Python 3.10+
+## Setup Instructions
+### Requirements
+- Python ≥ 3.10
 - OpenSCAD (CLI accessible)
-- macOS, Linux, or Windows (tested on macOS)
+- Libraries: `pip install -r requirements.txt`
 
-Python packages:
-- streamlit
-- streamlit-stl
-- trimesh
-
-SETUP
-
+### Running the App
+```bash
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-
-Install OpenSCAD from https://openscad.org and ensure the `openscad` binary is available in your PATH.
-
-RUNNING THE APP
-
 streamlit run app.py
+```
+- Visit the app at **http://localhost:8501**
 
-Then open http://localhost:8501 in your browser.
+### Testing
+```bash
+pytest                      # Run unit tests
+ruff src/ tests/            # Linter checks
+```
 
-HOW TEMPLATES WORK
+## Roadmap
+### Short Term
+- Add templates (coaster, nameplate)
+- Robust text layout handling
+- Overlay SVG logos into objects
 
-Each template consists of:
-- schema.json defining UI parameters and constraints
-- model.scad consuming those parameters to generate geometry
+### Long Term
+- LangChain integration for AI-driven templates
+- Backend API for remote access
+- Image-to-STL pipelines with AI
 
-The GUI loads the schema, renders inputs dynamically, passes values to OpenSCAD using -D defines, generates an STL, previews it, and validates the result. This design keeps geometry deterministic and print-safe.
-
-WHY NOT GENERATE GEOMETRY WITH AI?
-
-LLMs are not used to create meshes directly. Geometry is always created by OpenSCAD. AI (planned) will only choose templates, fill parameters, and retry or adjust on failure. This avoids invalid, non-manifold, or unprintable models.
-
-ROADMAP
-
-Near term:
-- Coaster template
-- Nameplate template
-- Robust text overflow handling
-- SVG emblem overlays
-
-Mid term:
-- Lithophanes
-- Relief plaques
-- Image-to-STL pipelines
-
-Long term:
-- LangChain agents for prompt routing, parameter filling, and layout correction
-- API backend for mobile and web apps
-
-STATUS
-
-Active development.
-Not production-ready.
-Local-only by design for now.
-
-LICENSE
-
-MIT (subject to change before public release).
+## Demo
+_TODO: Include screenshots of the Streamlit GUI and example STL generation._
