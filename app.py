@@ -512,6 +512,34 @@ with colL:
                 raw_lines = [str(params.get("text", ""))]
 
             line_gap = float(params.get("line_gap", 0))
+            if int(params.get("plate_auto_fit", 0)) == 1 and "plate_w" in params and "plate_h" in params:
+                try:
+                    fit_layout = layout_text(
+                        raw_lines,
+                        max_lines=max_lines,
+                        box_w_mm=1e6,
+                        box_h_mm=1e6,
+                        max_text_size=max_text_size,
+                        min_text_size=max_text_size,
+                        margin=1.0,
+                        line_gap_mm=line_gap,
+                    )
+                    fit_lines = fit_layout.get("lines", [])
+                    fit_widths = fit_layout.get("line_widths", [])
+                    pad_x = float(params.get("pad_x", 0))
+                    pad_y = float(params.get("pad_y", 0))
+                    if fit_widths:
+                        required_w = max(fit_widths) / TEXT_MARGIN + 2 * pad_x
+                        required_h = (
+                            max_text_size + max(0, len(fit_lines) - 1) * line_gap
+                        ) / TEXT_MARGIN + 2 * pad_y
+                        params["plate_w"] = max(float(params.get("plate_w", 0)), required_w)
+                        params["plate_h"] = max(float(params.get("plate_h", 0)), required_h)
+                        box_w = eval_expr(text_box.get("box_w", 0), params)
+                        box_h = eval_expr(text_box.get("box_h", 0), params)
+                except Exception:
+                    pass
+
             layout = layout_text(
                 raw_lines,
                 max_lines=max_lines,

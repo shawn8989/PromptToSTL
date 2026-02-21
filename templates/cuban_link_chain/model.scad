@@ -4,20 +4,24 @@
 chain_layout = 2; // fallback: 0=line, 1=ring, 2=frame
 chain_layout_mode = "frame"; // preferred: line | ring | frame
 
-link_count = 44;
+link_count = 64;
 link_auto = 1;
-link_outer_d = 16;
-link_band = 5;
-link_th = 4;
-link_flatten = 0.6;
-link_overlap = 0.45;
+link_auto_size = 1;
+link_outer_d = 12;
+link_band = 3.5;
+link_th = 3;
+link_flatten = 0.65;
+link_overlap = 0.55;
+link_length_factor = 1.6;
+link_twist = 18;
+link_z_offset = 0.6;
 ring_radius = 60;
 
 frame_auto = 1;
-frame_gap = 6;
+frame_gap = 3;
 frame_w = 120;
 frame_h = 90;
-frame_corner_r = 14;
+frame_corner_r = 12;
 
 plate_enabled = 1;
 plate_w = 50;
@@ -33,7 +37,7 @@ bail_w = 10;
 bail_h = 16;
 bail_th = 3;
 bail_radius = 2;
-bail_gap = 0;
+bail_gap = -2;
 bail_offset_x = 0;
 bail_offset_y = 0;
 
@@ -76,8 +80,12 @@ function _layout_mode() =
   chain_layout_mode == "frame" ? 2 :
   chain_layout;
 
-function _frame_w() = frame_auto == 1 ? (plate_w + 2 * frame_gap + link_outer_d) : frame_w;
-function _frame_h() = frame_auto == 1 ? (plate_h + 2 * frame_gap + link_outer_d) : frame_h;
+function _link_outer_d() =
+  link_auto_size == 1 ? max(6, min(plate_w, plate_h) / 2.5) : link_outer_d;
+function _link_band(d) = min(link_band, d / 2 - 0.6);
+function _link_len(d) = d * link_length_factor;
+function _frame_w() = frame_auto == 1 ? (plate_w + 2 * frame_gap + _link_outer_d()) : frame_w;
+function _frame_h() = frame_auto == 1 ? (plate_h + 2 * frame_gap + _link_outer_d()) : frame_h;
 function _frame_r(w, h) = min(frame_corner_r, min(w, h) / 2);
 function _arc_len(r) = r * PI / 2;
 function _frame_perim(w, h, r) = 2 * (w - 2 * r) + 2 * (h - 2 * r) + 4 * _arc_len(r);
@@ -128,24 +136,32 @@ function _frame_at(t, w, h, r) =
   [ [cx + r_eff * cos(a), cy + r_eff * sin(a)], a - 90 ];
 
 function _link_count(perim) =
-  link_auto == 1 ? max(4, floor(perim / (link_outer_d * (1 - link_overlap)))) : link_count;
+  link_auto == 1 ? max(4, floor(perim / (_link_len(_link_outer_d()) * (1 - link_overlap)))) : link_count;
 
 module link_shape() {
-  inner_d = max(1, link_outer_d - 2 * link_band);
+  d = _link_outer_d();
+  band = _link_band(d);
+  len = _link_len(d);
+  inner_w = max(1, d - 2 * band);
+  inner_len = max(inner_w, len - 2 * band);
   scale([1, link_flatten, 1])
-    difference() {
-      cylinder(d=link_outer_d, h=link_th, center=true);
-      cylinder(d=inner_d, h=link_th + 0.2, center=true);
-    }
+    linear_extrude(height=link_th, center=true)
+      difference() {
+        rounded_rect_2d(len, d, d / 2);
+        rounded_rect_2d(inner_len, inner_w, inner_w / 2);
+      }
 }
 
 module chain_line() {
-  pitch = link_outer_d * (1 - link_overlap);
-  total = (link_count - 1) * pitch;
-  for (i = [0 : link_count - 1]) {
+  pitch = _link_len(_link_outer_d()) * (1 - link_overlap);
+  count = link_auto == 1 ? max(4, link_count) : link_count;
+  total = (count - 1) * pitch;
+  for (i = [0 : count - 1]) {
     x = -total / 2 + i * pitch;
-    translate([x, 0, 0])
-      rotate([0, (i % 2) * 90, 0])
+    z = (i % 2 == 0) ? link_z_offset : -link_z_offset;
+    twist = (i % 2 == 0) ? link_twist : -link_twist;
+    translate([x, 0, z])
+      rotate([0, 0, twist])
         link_shape();
   }
 }
@@ -153,9 +169,11 @@ module chain_line() {
 module chain_ring() {
   for (i = [0 : link_count - 1]) {
     angle = 360 / link_count * i;
+    z = (i % 2 == 0) ? link_z_offset : -link_z_offset;
+    twist = (i % 2 == 0) ? link_twist : -link_twist;
     rotate([0, 0, angle])
-      translate([ring_radius, 0, 0])
-        rotate([0, (i % 2) * 90, 0])
+      translate([ring_radius, 0, z])
+        rotate([0, 0, twist])
           link_shape();
   }
 }
@@ -172,10 +190,11 @@ module chain_frame() {
     info = _frame_at(t, w, h, r);
     pos = info[0];
     ang = info[1];
-    translate([pos[0], pos[1], 0])
-      rotate([0, 0, ang])
-        rotate([0, (i % 2) * 90, 0])
-          link_shape();
+    z = (i % 2 == 0) ? link_z_offset : -link_z_offset;
+    twist = (i % 2 == 0) ? link_twist : -link_twist;
+    translate([pos[0], pos[1], z])
+      rotate([0, 0, ang + twist])
+        link_shape();
   }
 }
 
