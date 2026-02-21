@@ -248,7 +248,7 @@ def _build_schema(spec: TemplateSpec) -> Dict[str, Any]:
             "offset_x": {"type": "number", "default": t.offset_x, "min": -200, "max": 200},
             "offset_y": {"type": "number", "default": t.offset_y, "min": -200, "max": 200},
             "emboss": {"type": "integer", "default": t.emboss, "min": 0, "max": 1},
-            "text_align": {"type": "string", "default": t.text_align},
+            "text_align": {"type": "string", "default": t.text_align, "options": ["left", "center", "right"]},
             "pad_x": {"type": "number", "default": t.pad_x, "min": 0, "max": 200},
             "pad_y": {"type": "number", "default": t.pad_y, "min": 0, "max": 200},
         })
@@ -287,7 +287,22 @@ def _build_schema(spec: TemplateSpec) -> Dict[str, Any]:
     if spec.emblem:
         e = spec.emblem
         params.update({
-            "emblem_snap": {"type": "string", "default": e.snap},
+            "emblem_snap": {
+                "type": "string",
+                "default": e.snap,
+                "options": [
+                    "custom",
+                    "center",
+                    "left",
+                    "right",
+                    "above_text",
+                    "below_text",
+                    "top_left",
+                    "top_right",
+                    "bottom_left",
+                    "bottom_right",
+                ],
+            },
             "emblem_autocenter": {"type": "integer", "default": e.autocenter, "min": 0, "max": 1},
             "emblem_enabled": {"type": "integer", "default": 0, "min": 0, "max": 1},
             "emblem_path": {"type": "string", "default": ""},
@@ -332,3 +347,111 @@ def create_template(spec: TemplateSpec) -> Tuple[str, Path]:
     schema_path.write_text(json.dumps(_build_schema(spec), indent=2))
     meta_path.write_text(json.dumps(_build_meta(spec), indent=2))
     return template_id, out_dir
+
+
+def spec_to_defaults(spec: TemplateSpec) -> Dict[str, Any]:
+    return {
+        "template_id": spec.template_id,
+        "label": spec.label,
+        "shape": spec.shape,
+        "width": spec.width,
+        "height": spec.height,
+        "diameter": spec.diameter,
+        "thickness": spec.thickness,
+        "radius": spec.radius,
+        "text": asdict(spec.text) if spec.text else None,
+        "emblem": asdict(spec.emblem) if spec.emblem else None,
+    }
+
+
+def _clamp(value: Any, min_v: float, max_v: float, default: float) -> float:
+    try:
+        num = float(value)
+    except Exception:
+        return float(default)
+    return float(max(min_v, min(max_v, num)))
+
+
+def coerce_template_spec(data: Dict[str, Any]) -> TemplateSpec:
+    data = data or {}
+    shape = str(data.get("shape", "rounded_rect")).strip().lower()
+    if shape not in {"rounded_rect", "circle"}:
+        shape = "rounded_rect"
+
+    template_id = sanitize_template_id(str(data.get("template_id", "custom_template")))
+    label = str(data.get("label") or template_id).strip() or template_id
+
+    width = _clamp(data.get("width", 80), 10, 400, 80)
+    height = _clamp(data.get("height", 30), 10, 400, 30)
+    diameter = _clamp(data.get("diameter", 70), 10, 400, 70)
+    thickness = _clamp(data.get("thickness", 4), 1, 50, 4)
+    radius = _clamp(data.get("radius", 5), 0, 200, 5)
+    radius = min(radius, min(width, height) / 2) if shape == "rounded_rect" else 0.0
+
+    text_spec = None
+    text_data = data.get("text") or None
+    if isinstance(text_data, dict) and text_data.get("enabled", True):
+        max_lines = int(_clamp(text_data.get("max_lines", 2), 1, 3, 2))
+        line1 = str(text_data.get("line1", "YOUR TEXT"))
+        line2 = str(text_data.get("line2", "")) if max_lines >= 2 else ""
+        line3 = str(text_data.get("line3", "")) if max_lines >= 3 else ""
+        text_spec = TextSpec(
+            enabled=True,
+            max_lines=max_lines,
+            line1=line1,
+            line2=line2,
+            line3=line3,
+            text_size=_clamp(text_data.get("text_size", 12), 4, 60, 12),
+            text_height=_clamp(text_data.get("text_height", 1.2), 0.2, 10, 1.2),
+            line_gap=_clamp(text_data.get("line_gap", 8), 0, 60, 8),
+            pad_x=_clamp(text_data.get("pad_x", 6), 0, 200, 6),
+            pad_y=_clamp(text_data.get("pad_y", 4), 0, 200, 4),
+            offset_x=_clamp(text_data.get("offset_x", 0), -200, 200, 0),
+            offset_y=_clamp(text_data.get("offset_y", 0), -200, 200, 0),
+            emboss=1 if str(text_data.get("emboss", 1)) in {"1", "true", "True"} else 0,
+            text_align=str(text_data.get("text_align", "center")).lower()
+            if str(text_data.get("text_align", "center")).lower() in {"left", "center", "right"}
+            else "center",
+        )
+
+    emblem_spec = None
+    emblem_data = data.get("emblem") or None
+    if isinstance(emblem_data, dict) and emblem_data.get("enabled", True):
+        snap = str(emblem_data.get("snap", "custom"))
+        if snap not in {
+            "custom",
+            "center",
+            "left",
+            "right",
+            "above_text",
+            "below_text",
+            "top_left",
+            "top_right",
+            "bottom_left",
+            "bottom_right",
+        }:
+            snap = "custom"
+        emblem_spec = EmblemSpec(
+            enabled=True,
+            snap=snap,
+            autocenter=1 if str(emblem_data.get("autocenter", 1)) in {"1", "true", "True"} else 0,
+            scale=_clamp(emblem_data.get("scale", 0.25), 0.05, 5, 0.25),
+            depth=_clamp(emblem_data.get("depth", 1.2), 0.2, 10, 1.2),
+            x=_clamp(emblem_data.get("x", 0), -200, 200, 0),
+            y=_clamp(emblem_data.get("y", 0), -200, 200, 0),
+            rot=_clamp(emblem_data.get("rot", 0), -180, 180, 0),
+            mode=1 if str(emblem_data.get("mode", 1)) in {"1", "true", "True"} else 0,
+        )
+
+    return TemplateSpec(
+        template_id=template_id,
+        label=label,
+        shape=shape,
+        width=width,
+        height=height,
+        diameter=diameter,
+        thickness=thickness,
+        radius=radius,
+        text=text_spec,
+        emblem=emblem_spec,
+    )

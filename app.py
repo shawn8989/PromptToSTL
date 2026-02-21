@@ -15,11 +15,14 @@ from src.core.template_builder import (
     EmblemSpec,
     TemplateSpec,
     TextSpec,
+    coerce_template_spec,
     create_template,
     sanitize_template_id,
+    spec_to_defaults,
 )
 from src.core.validate import validate_stl
 from src.intent.router import route_intent
+from src.intent.template_builder_agent import propose_template_spec
 from streamlit_stl import stl_from_file
 import trimesh
 try:
@@ -80,38 +83,141 @@ def render_template_builder():
     st.header("Template Builder")
     st.caption("Create a new template using predefined building blocks.")
 
+    with st.expander("Describe a template (AI)", expanded=False):
+        description = st.text_area("Describe the template", height=120, key="builder_description")
+        if st.button("Generate proposal"):
+            try:
+                proposal = propose_template_spec(description)
+                st.session_state["builder_proposal"] = proposal
+            except Exception as err:
+                st.error(f"AI proposal failed: {err}")
+
+        proposal = st.session_state.get("builder_proposal")
+        if proposal:
+            st.json(proposal)
+            if st.button("Apply proposal to form"):
+                try:
+                    spec = coerce_template_spec(proposal)
+                    st.session_state["builder_defaults"] = spec_to_defaults(spec)
+                    if hasattr(st, "rerun"):
+                        st.rerun()
+                    else:
+                        st.experimental_rerun()
+                except Exception as err:
+                    st.error(f"Failed to apply proposal: {err}")
+
+    defaults = st.session_state.get("builder_defaults") or {}
+    defaults_text = defaults.get("text") or {}
+    defaults_emblem = defaults.get("emblem") or {}
+    shape_default = defaults.get("shape", "rounded_rect")
+    shape_label_default = "Rounded Rectangle" if shape_default == "rounded_rect" else "Circle"
+
     with st.form("template_builder"):
-        template_id_raw = st.text_input("Template ID", value="custom_template")
-        label = st.text_input("Label", value="Custom Template")
-        shape_label = st.selectbox("Base shape", ["Rounded Rectangle", "Circle"])
+        template_id_raw = st.text_input("Template ID", value=defaults.get("template_id", "custom_template"))
+        label = st.text_input("Label", value=defaults.get("label", "Custom Template"))
+        shape_label = st.selectbox(
+            "Base shape",
+            ["Rounded Rectangle", "Circle"],
+            index=0 if shape_label_default == "Rounded Rectangle" else 1,
+        )
 
         if shape_label == "Rounded Rectangle":
-            width = st.number_input("Width (mm)", value=80.0, min_value=10.0, max_value=400.0)
-            height = st.number_input("Height (mm)", value=30.0, min_value=10.0, max_value=400.0)
-            radius = st.number_input("Corner radius (mm)", value=5.0, min_value=0.0, max_value=200.0)
+            width = st.number_input(
+                "Width (mm)",
+                value=float(defaults.get("width", 80.0)),
+                min_value=10.0,
+                max_value=400.0,
+            )
+            height = st.number_input(
+                "Height (mm)",
+                value=float(defaults.get("height", 30.0)),
+                min_value=10.0,
+                max_value=400.0,
+            )
+            radius = st.number_input(
+                "Corner radius (mm)",
+                value=float(defaults.get("radius", 5.0)),
+                min_value=0.0,
+                max_value=200.0,
+            )
             diameter = 0.0
         else:
-            diameter = st.number_input("Diameter (mm)", value=70.0, min_value=10.0, max_value=400.0)
+            diameter = st.number_input(
+                "Diameter (mm)",
+                value=float(defaults.get("diameter", 70.0)),
+                min_value=10.0,
+                max_value=400.0,
+            )
             width = 0.0
             height = 0.0
             radius = 0.0
 
-        thickness = st.number_input("Thickness (mm)", value=4.0, min_value=1.0, max_value=50.0)
+        thickness = st.number_input(
+            "Thickness (mm)",
+            value=float(defaults.get("thickness", 4.0)),
+            min_value=1.0,
+            max_value=50.0,
+        )
 
-        include_text = st.checkbox("Include text region", value=True)
+        include_text_default = True if not defaults else bool(defaults_text)
+        include_text = st.checkbox("Include text region", value=include_text_default)
         text_spec = None
         if include_text:
-            max_lines = st.selectbox("Max lines", [1, 2, 3], index=1)
-            line1 = st.text_input("Default line 1", value="YOUR TEXT")
-            line2 = st.text_input("Default line 2", value="") if max_lines >= 2 else ""
-            line3 = st.text_input("Default line 3", value="") if max_lines >= 3 else ""
-            text_size = st.number_input("Text size (mm)", value=12.0, min_value=4.0, max_value=60.0)
-            text_height = st.number_input("Text depth (mm)", value=1.2, min_value=0.2, max_value=10.0)
-            line_gap = st.number_input("Line gap (mm)", value=8.0, min_value=0.0, max_value=60.0)
-            pad_x = st.number_input("Text padding X (mm)", value=6.0, min_value=0.0, max_value=200.0)
-            pad_y = st.number_input("Text padding Y (mm)", value=4.0, min_value=0.0, max_value=200.0)
-            text_align = st.selectbox("Text align", ["center", "left", "right"], index=0)
-            text_mode = st.selectbox("Text mode", ["Emboss", "Engrave"], index=0)
+            max_lines = st.selectbox(
+                "Max lines",
+                [1, 2, 3],
+                index=max(0, min(2, int(defaults_text.get("max_lines", 2)) - 1)),
+            )
+            line1 = st.text_input("Default line 1", value=defaults_text.get("line1", "YOUR TEXT"))
+            line2 = (
+                st.text_input("Default line 2", value=defaults_text.get("line2", ""))
+                if max_lines >= 2
+                else ""
+            )
+            line3 = (
+                st.text_input("Default line 3", value=defaults_text.get("line3", ""))
+                if max_lines >= 3
+                else ""
+            )
+            text_size = st.number_input(
+                "Text size (mm)",
+                value=float(defaults_text.get("text_size", 12.0)),
+                min_value=4.0,
+                max_value=60.0,
+            )
+            text_height = st.number_input(
+                "Text depth (mm)",
+                value=float(defaults_text.get("text_height", 1.2)),
+                min_value=0.2,
+                max_value=10.0,
+            )
+            line_gap = st.number_input(
+                "Line gap (mm)",
+                value=float(defaults_text.get("line_gap", 8.0)),
+                min_value=0.0,
+                max_value=60.0,
+            )
+            pad_x = st.number_input(
+                "Text padding X (mm)",
+                value=float(defaults_text.get("pad_x", 6.0)),
+                min_value=0.0,
+                max_value=200.0,
+            )
+            pad_y = st.number_input(
+                "Text padding Y (mm)",
+                value=float(defaults_text.get("pad_y", 4.0)),
+                min_value=0.0,
+                max_value=200.0,
+            )
+            text_align_value = str(defaults_text.get("text_align", "center"))
+            text_align_options = ["center", "left", "right"]
+            text_align_index = text_align_options.index(text_align_value) if text_align_value in text_align_options else 0
+            text_align = st.selectbox("Text align", text_align_options, index=text_align_index)
+            text_mode = st.selectbox(
+                "Text mode",
+                ["Emboss", "Engrave"],
+                index=0 if int(defaults_text.get("emboss", 1)) == 1 else 1,
+            )
             emboss = 1 if text_mode == "Emboss" else 0
 
             text_spec = TextSpec(
@@ -129,32 +235,65 @@ def render_template_builder():
                 text_align=text_align,
             )
 
-        include_emblem = st.checkbox("Include emblem region", value=False)
+        include_emblem_default = bool(defaults_emblem) if defaults else False
+        include_emblem = st.checkbox("Include emblem region", value=include_emblem_default)
         emblem_spec = None
         if include_emblem:
-            emblem_snap = st.selectbox(
-                "Emblem snap",
-                [
-                    "custom",
-                    "center",
-                    "left",
-                    "right",
-                    "above_text",
-                    "below_text",
-                    "top_left",
-                    "top_right",
-                    "bottom_left",
-                    "bottom_right",
-                ],
-                index=0,
+            emblem_snap_options = [
+                "custom",
+                "center",
+                "left",
+                "right",
+                "above_text",
+                "below_text",
+                "top_left",
+                "top_right",
+                "bottom_left",
+                "bottom_right",
+            ]
+            emblem_snap_value = str(defaults_emblem.get("snap", "custom"))
+            emblem_snap_index = (
+                emblem_snap_options.index(emblem_snap_value)
+                if emblem_snap_value in emblem_snap_options
+                else 0
             )
-            emblem_autocenter = st.checkbox("Auto-center emblem", value=True)
-            emblem_scale = st.number_input("Emblem scale", value=0.25, min_value=0.05, max_value=5.0)
-            emblem_depth = st.number_input("Emblem depth (mm)", value=1.2, min_value=0.2, max_value=10.0)
-            emblem_x = st.number_input("Emblem X (mm)", value=0.0, min_value=-200.0, max_value=200.0)
-            emblem_y = st.number_input("Emblem Y (mm)", value=0.0, min_value=-200.0, max_value=200.0)
-            emblem_rot = st.number_input("Emblem rotation (deg)", value=0.0, min_value=-180.0, max_value=180.0)
-            emblem_mode = st.selectbox("Emblem mode", ["Emboss", "Engrave"], index=0)
+            emblem_snap = st.selectbox("Emblem snap", emblem_snap_options, index=emblem_snap_index)
+            emblem_autocenter = st.checkbox("Auto-center emblem", value=bool(defaults_emblem.get("autocenter", 1)))
+            emblem_scale = st.number_input(
+                "Emblem scale",
+                value=float(defaults_emblem.get("scale", 0.25)),
+                min_value=0.05,
+                max_value=5.0,
+            )
+            emblem_depth = st.number_input(
+                "Emblem depth (mm)",
+                value=float(defaults_emblem.get("depth", 1.2)),
+                min_value=0.2,
+                max_value=10.0,
+            )
+            emblem_x = st.number_input(
+                "Emblem X (mm)",
+                value=float(defaults_emblem.get("x", 0.0)),
+                min_value=-200.0,
+                max_value=200.0,
+            )
+            emblem_y = st.number_input(
+                "Emblem Y (mm)",
+                value=float(defaults_emblem.get("y", 0.0)),
+                min_value=-200.0,
+                max_value=200.0,
+            )
+            emblem_rot = st.number_input(
+                "Emblem rotation (deg)",
+                value=float(defaults_emblem.get("rot", 0.0)),
+                min_value=-180.0,
+                max_value=180.0,
+            )
+            emblem_mode = st.selectbox(
+                "Emblem mode",
+                ["Emboss", "Engrave"],
+                index=0 if int(defaults_emblem.get("mode", 1)) == 1 else 1,
+            )
 
             emblem_spec = EmblemSpec(
                 enabled=True,
@@ -189,6 +328,7 @@ def render_template_builder():
         )
         try:
             final_id, out_dir = create_template(spec)
+            st.session_state.pop("builder_defaults", None)
             st.success(f"Created template: custom/{final_id}")
             st.caption(str(out_dir))
             if hasattr(st, "rerun"):
@@ -311,6 +451,11 @@ with colL:
                     ["top", "center", "bottom"],
                     index=["top", "center", "bottom"].index(str(default)) if default in {"top", "center", "bottom"} else 1,
                 )
+            elif isinstance(spec.get("options"), list) and spec.get("options"):
+                options = [str(opt) for opt in spec["options"]]
+                default_value = str(default) if default is not None else options[0]
+                index = options.index(default_value) if default_value in options else 0
+                params[k] = st.selectbox(k, options, index=index)
             else:
                 params[k] = st.text_input(k, value=str(default) if default is not None else "")
         elif t in {"int", "integer"}:
@@ -395,42 +540,6 @@ with colL:
                 st.warning(layout["warning"])
             elif layout.get("truncated"):
                 st.warning("Text was truncated to fit the text box.")
-
-    emblem_snap = params.get("emblem_snap") if isinstance(params.get("emblem_snap"), str) else None
-    if emblem_snap and emblem_snap != "custom":
-        box_w = float(params.get("text_box_w", 0.0))
-        box_h = float(params.get("text_box_h", 0.0))
-        box_off_x = float(params.get("text_box_offset_x", 0.0))
-        box_off_y = float(params.get("text_box_offset_y", 0.0))
-        margin = min(box_w, box_h) * 0.1 if min(box_w, box_h) > 0 else 0.0
-
-        def snap_pos(kind):
-            if kind == "center":
-                return 0.0, 0.0
-            if kind == "left":
-                return -box_w / 2 + margin, 0.0
-            if kind == "right":
-                return box_w / 2 - margin, 0.0
-            if kind == "above_text":
-                return 0.0, box_h / 2 - margin
-            if kind == "below_text":
-                return 0.0, -box_h / 2 + margin
-            if kind == "top_left":
-                return -box_w / 2 + margin, box_h / 2 - margin
-            if kind == "top_right":
-                return box_w / 2 - margin, box_h / 2 - margin
-            if kind == "bottom_left":
-                return -box_w / 2 + margin, -box_h / 2 + margin
-            if kind == "bottom_right":
-                return box_w / 2 - margin, -box_h / 2 + margin
-            return 0.0, 0.0
-
-        snap_x, snap_y = snap_pos(emblem_snap)
-        autocenter = int(params.get("emblem_autocenter", 1)) == 1
-        if emblem_snap == "center" and autocenter:
-            snap_x, snap_y = 0.0, 0.0
-        params["emblem_x"] = snap_x + box_off_x
-        params["emblem_y"] = snap_y + box_off_y
 
     emblem_snap = params.get("emblem_snap") if isinstance(params.get("emblem_snap"), str) else None
     if emblem_snap and emblem_snap != "custom":

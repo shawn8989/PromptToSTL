@@ -1,0 +1,70 @@
+{
+  "template_id": "cuban_link_chain",
+  "label": "Cuban Link Chain",
+  "scad_file": "model.scad",
+  "max_lines": 3,
+  "text_box": {
+    "box_w": "plate_w - 2*pad_x",
+    "box_h": "plate_h - 2*pad_y",
+    "offset_x": "plate_offset_x",
+    "offset_y": "plate_offset_y"
+  },
+  "params": {
+    "chain_layout": { "type": "integer", "default": 0, "min": 0, "max": 1 },
+    "link_count": { "type": "integer", "default": 18, "min": 4, "max": 80 },
+    "link_outer_d": { "type": "number", "default": 18, "min": 8, "max": 60 },
+    "link_band": { "type": "number", "default": 5, "min": 2, "max": 20 },
+    "link_th": { "type": "number", "default": 4, "min": 2, "max": 20 },
+    "link_flatten": { "type": "number", "default": 0.7, "min": 0.3, "max": 1.2 },
+    "link_overlap": { "type": "number", "default": 0.35, "min": 0.1, "max": 0.7 },
+    "ring_radius": { "type": "number", "default": 60, "min": 20, "max": 200 },
+
+    "plate_enabled": { "type": "integer", "default": 1, "min": 0, "max": 1 },
+    "plate_w": { "type": "number", "default": 50, "min": 10, "max": 200 },
+    "plate_h": { "type": "number", "default": 20, "min": 10, "max": 200 },
+    "plate_th": { "type": "number", "default": 3, "min": 1, "max": 20 },
+    "plate_radius": { "type": "number", "default": 3, "min": 0, "max": 20 },
+    "plate_offset_x": { "type": "number", "default": 0, "min": -200, "max": 200 },
+    "plate_offset_y": { "type": "number", "default": 0, "min": -200, "max": 200 },
+
+    "text_enabled": { "type": "integer", "default": 1, "min": 0, "max": 1 },
+    "line1": { "type": "string", "default": "CUSTOM" },
+    "line2": { "type": "string", "default": "" },
+    "line3": { "type": "string", "default": "" },
+    "text_size": { "type": "number", "default": 10, "min": 4, "max": 40 },
+    "text_height": { "type": "number", "default": 1.0, "min": 0.4, "max": 5 },
+    "line_gap": { "type": "number", "default": 8, "min": 0, "max": 30 },
+    "offset_x": { "type": "number", "default": 0, "min": -200, "max": 200 },
+    "offset_y": { "type": "number", "default": 0, "min": -200, "max": 200 },
+    "text_align": { "type": "string", "default": "center", "options": ["left", "center", "right"] },
+    "emboss": { "type": "integer", "default": 1, "min": 0, "max": 1 },
+    "pad_x": { "type": "number", "default": 4, "min": 0, "max": 50 },
+    "pad_y": { "type": "number", "default": 3, "min": 0, "max": 50 },
+
+    "emblem_snap": {
+      "type": "string",
+      "default": "custom",
+      "options": [
+        "custom",
+        "center",
+        "left",
+        "right",
+        "above_text",
+        "below_text",
+        "top_left",
+        "top_right",
+        "bottom_left",
+        "bottom_right"
+      ]
+    },
+    "emblem_autocenter": { "type": "integer", "default": 1, "min": 0, "max": 1 },
+    "emblem_enabled": { "type": "integer", "default": 0, "min": 0, "max": 1 },
+    "emblem_path": { "type": "string", "default": "" },
+    "emblem_scale": { "type": "number", "default": 0.25, "min": 0.05, "max": 5 },
+    "emblem_x": { "type": "number", "default": 0, "min": -100, "max": 100 },
+    "emblem_y": { "type": "number", "default": 0, "min": -100, "max": 100 },
+    "emblem_rot": { "type": "number", "default": 0, "min": -180, "max": 180 },
+    "emblem_mode": { "type": "integer", "default": 1, "min": 0, "max": 1 },
+    "emblem_depth": { "type": "number", "default": 1.2, "min": 0.4, "max": 4 }
+  }
+}
