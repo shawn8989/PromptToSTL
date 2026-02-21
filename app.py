@@ -11,6 +11,13 @@ from dotenv import load_dotenv
 from src.core.catalog import list_templates, load_template
 from src.core.layout import layout_text
 from src.core.runner import run_openscad
+from src.core.template_builder import (
+    EmblemSpec,
+    TemplateSpec,
+    TextSpec,
+    create_template,
+    sanitize_template_id,
+)
 from src.core.validate import validate_stl
 from src.intent.router import route_intent
 from streamlit_stl import stl_from_file
@@ -28,6 +35,9 @@ PLACEHOLDER_STL = Path(__file__).resolve().parent / "templates" / "placeholder.s
 TEXT_MARGIN = 0.9
 
 load_dotenv()
+
+MODE_BUILD_TEMPLATE = "BUILD_TEMPLATE"
+MODE_CREATE_TEMPLATE = "CREATE_TEMPLATE"
 
 
 def eval_expr(value, params):
@@ -65,6 +75,129 @@ def eval_expr(value, params):
     except Exception:
         return 0.0
 
+
+def render_template_builder():
+    st.header("Template Builder")
+    st.caption("Create a new template using predefined building blocks.")
+
+    with st.form("template_builder"):
+        template_id_raw = st.text_input("Template ID", value="custom_template")
+        label = st.text_input("Label", value="Custom Template")
+        shape_label = st.selectbox("Base shape", ["Rounded Rectangle", "Circle"])
+
+        if shape_label == "Rounded Rectangle":
+            width = st.number_input("Width (mm)", value=80.0, min_value=10.0, max_value=400.0)
+            height = st.number_input("Height (mm)", value=30.0, min_value=10.0, max_value=400.0)
+            radius = st.number_input("Corner radius (mm)", value=5.0, min_value=0.0, max_value=200.0)
+            diameter = 0.0
+        else:
+            diameter = st.number_input("Diameter (mm)", value=70.0, min_value=10.0, max_value=400.0)
+            width = 0.0
+            height = 0.0
+            radius = 0.0
+
+        thickness = st.number_input("Thickness (mm)", value=4.0, min_value=1.0, max_value=50.0)
+
+        include_text = st.checkbox("Include text region", value=True)
+        text_spec = None
+        if include_text:
+            max_lines = st.selectbox("Max lines", [1, 2, 3], index=1)
+            line1 = st.text_input("Default line 1", value="YOUR TEXT")
+            line2 = st.text_input("Default line 2", value="") if max_lines >= 2 else ""
+            line3 = st.text_input("Default line 3", value="") if max_lines >= 3 else ""
+            text_size = st.number_input("Text size (mm)", value=12.0, min_value=4.0, max_value=60.0)
+            text_height = st.number_input("Text depth (mm)", value=1.2, min_value=0.2, max_value=10.0)
+            line_gap = st.number_input("Line gap (mm)", value=8.0, min_value=0.0, max_value=60.0)
+            pad_x = st.number_input("Text padding X (mm)", value=6.0, min_value=0.0, max_value=200.0)
+            pad_y = st.number_input("Text padding Y (mm)", value=4.0, min_value=0.0, max_value=200.0)
+            text_align = st.selectbox("Text align", ["center", "left", "right"], index=0)
+            text_mode = st.selectbox("Text mode", ["Emboss", "Engrave"], index=0)
+            emboss = 1 if text_mode == "Emboss" else 0
+
+            text_spec = TextSpec(
+                enabled=True,
+                max_lines=max_lines,
+                line1=line1,
+                line2=line2,
+                line3=line3,
+                text_size=text_size,
+                text_height=text_height,
+                line_gap=line_gap,
+                pad_x=pad_x,
+                pad_y=pad_y,
+                emboss=emboss,
+                text_align=text_align,
+            )
+
+        include_emblem = st.checkbox("Include emblem region", value=False)
+        emblem_spec = None
+        if include_emblem:
+            emblem_snap = st.selectbox(
+                "Emblem snap",
+                [
+                    "custom",
+                    "center",
+                    "left",
+                    "right",
+                    "above_text",
+                    "below_text",
+                    "top_left",
+                    "top_right",
+                    "bottom_left",
+                    "bottom_right",
+                ],
+                index=0,
+            )
+            emblem_autocenter = st.checkbox("Auto-center emblem", value=True)
+            emblem_scale = st.number_input("Emblem scale", value=0.25, min_value=0.05, max_value=5.0)
+            emblem_depth = st.number_input("Emblem depth (mm)", value=1.2, min_value=0.2, max_value=10.0)
+            emblem_x = st.number_input("Emblem X (mm)", value=0.0, min_value=-200.0, max_value=200.0)
+            emblem_y = st.number_input("Emblem Y (mm)", value=0.0, min_value=-200.0, max_value=200.0)
+            emblem_rot = st.number_input("Emblem rotation (deg)", value=0.0, min_value=-180.0, max_value=180.0)
+            emblem_mode = st.selectbox("Emblem mode", ["Emboss", "Engrave"], index=0)
+
+            emblem_spec = EmblemSpec(
+                enabled=True,
+                snap=emblem_snap,
+                autocenter=1 if emblem_autocenter else 0,
+                scale=emblem_scale,
+                depth=emblem_depth,
+                x=emblem_x,
+                y=emblem_y,
+                rot=emblem_rot,
+                mode=1 if emblem_mode == "Emboss" else 0,
+            )
+
+        submit = st.form_submit_button("Create template")
+
+    if submit:
+        template_id = sanitize_template_id(template_id_raw)
+        if not template_id:
+            st.error("Template ID cannot be empty.")
+            return
+        spec = TemplateSpec(
+            template_id=template_id,
+            label=label or template_id,
+            shape="rounded_rect" if shape_label == "Rounded Rectangle" else "circle",
+            width=width,
+            height=height,
+            diameter=diameter,
+            thickness=thickness,
+            radius=radius,
+            text=text_spec,
+            emblem=emblem_spec,
+        )
+        try:
+            final_id, out_dir = create_template(spec)
+            st.success(f"Created template: custom/{final_id}")
+            st.caption(str(out_dir))
+            if hasattr(st, "rerun"):
+                st.rerun()
+            else:
+                st.experimental_rerun()
+        except FileExistsError:
+            st.error(f"Template ID already exists: {template_id}")
+
 st.set_page_config(page_title="PromptToSTL", layout="wide")
 st.title("PromptToSTL (Local GUI)")
 
@@ -76,9 +209,18 @@ if "last_build_id" not in st.session_state:
     st.session_state["last_build_id"] = 0
 
 with st.sidebar:
-    st.header("Engine")
-    openscad_exe = st.text_input("OpenSCAD executable", value=DEFAULT_OPENSCAD)
-    mode = st.radio("Mode", ["Manual", "Describe it"], horizontal=True)
+    st.header("App Mode")
+    app_mode_label = st.radio("Mode", ["Build Template", "Create Template"], horizontal=True)
+    app_mode = MODE_BUILD_TEMPLATE if app_mode_label == "Build Template" else MODE_CREATE_TEMPLATE
+
+    if app_mode == MODE_BUILD_TEMPLATE:
+        st.header("Engine")
+        openscad_exe = st.text_input("OpenSCAD executable", value=DEFAULT_OPENSCAD)
+        build_mode = st.radio("Mode", ["Manual", "Describe it"], horizontal=True)
+
+if app_mode == MODE_CREATE_TEMPLATE:
+    render_template_builder()
+    st.stop()
 
 templates = list_templates()
 if not templates:
@@ -89,7 +231,7 @@ colL, colR = st.columns([1, 1], gap="large")
 uploaded_svg = None
 
 with colL:
-    if mode == "Describe it":
+    if build_mode == "Describe it":
         st.subheader("Describe it")
         description = st.text_area("Describe your object", height=120)
         if st.button("Generate Proposal"):
@@ -182,7 +324,7 @@ with colL:
         else:
             st.warning(f"Unknown type {t} for {k}")
 
-    if template_id in {"keychain_roundrect", "coaster_round", "nameplate"}:
+    if "emblem_enabled" in schema.get("params", {}):
         st.subheader("Emblem")
         uploaded_svg = st.file_uploader("SVG emblem", type=["svg"])
 
@@ -199,6 +341,14 @@ with colL:
 
         params["offset_x"] = offset_x
         params["offset_y"] = offset_y
+        if "text_box_w" not in params:
+            params["text_box_w"] = box_w
+        if "text_box_h" not in params:
+            params["text_box_h"] = box_h
+        if "text_box_offset_x" not in params:
+            params["text_box_offset_x"] = offset_x
+        if "text_box_offset_y" not in params:
+            params["text_box_offset_y"] = offset_y
 
         if template_id == "nameplate":
             layout_debug = {
@@ -452,7 +602,7 @@ if build_requested:
     stl_path = job_dir / f"model_{stamp}.stl"
     log_path = job_dir / "logs.txt"
 
-    if template_id in {"keychain_roundrect", "coaster_round", "nameplate"} and uploaded_svg is not None:
+    if "emblem_enabled" in schema.get("params", {}) and uploaded_svg is not None:
         emblem_path = job_dir / "emblem.svg"
         emblem_path.write_bytes(uploaded_svg.getvalue())
         params["emblem_enabled"] = 1
