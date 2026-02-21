@@ -10,14 +10,25 @@
     "offset_y": "plate_offset_y"
   },
   "params": {
-    "chain_layout": { "type": "integer", "default": 0, "min": 0, "max": 1 },
-    "link_count": { "type": "integer", "default": 18, "min": 4, "max": 80 },
-    "link_outer_d": { "type": "number", "default": 18, "min": 8, "max": 60 },
+    "chain_layout_mode": {
+      "type": "string",
+      "default": "frame",
+      "options": ["line", "ring", "frame"]
+    },
+    "link_count": { "type": "integer", "default": 44, "min": 4, "max": 200 },
+    "link_auto": { "type": "integer", "default": 1, "min": 0, "max": 1 },
+    "link_outer_d": { "type": "number", "default": 16, "min": 8, "max": 60 },
     "link_band": { "type": "number", "default": 5, "min": 2, "max": 20 },
     "link_th": { "type": "number", "default": 4, "min": 2, "max": 20 },
-    "link_flatten": { "type": "number", "default": 0.7, "min": 0.3, "max": 1.2 },
-    "link_overlap": { "type": "number", "default": 0.35, "min": 0.1, "max": 0.7 },
+    "link_flatten": { "type": "number", "default": 0.6, "min": 0.3, "max": 1.2 },
+    "link_overlap": { "type": "number", "default": 0.45, "min": 0.1, "max": 0.7 },
     "ring_radius": { "type": "number", "default": 60, "min": 20, "max": 200 },
+
+    "frame_auto": { "type": "integer", "default": 1, "min": 0, "max": 1 },
+    "frame_gap": { "type": "number", "default": 6, "min": 0, "max": 40 },
+    "frame_w": { "type": "number", "default": 120, "min": 20, "max": 400 },
+    "frame_h": { "type": "number", "default": 90, "min": 20, "max": 400 },
+    "frame_corner_r": { "type": "number", "default": 14, "min": 0, "max": 120 },
 
     "plate_enabled": { "type": "integer", "default": 1, "min": 0, "max": 1 },
     "plate_w": { "type": "number", "default": 50, "min": 10, "max": 200 },
@@ -26,6 +37,16 @@
     "plate_radius": { "type": "number", "default": 3, "min": 0, "max": 20 },
     "plate_offset_x": { "type": "number", "default": 0, "min": -200, "max": 200 },
     "plate_offset_y": { "type": "number", "default": 0, "min": -200, "max": 200 },
+
+    "bail_enabled": { "type": "integer", "default": 1, "min": 0, "max": 1 },
+    "bail_auto": { "type": "integer", "default": 1, "min": 0, "max": 1 },
+    "bail_w": { "type": "number", "default": 10, "min": 4, "max": 60 },
+    "bail_h": { "type": "number", "default": 16, "min": 4, "max": 80 },
+    "bail_th": { "type": "number", "default": 3, "min": 1, "max": 20 },
+    "bail_radius": { "type": "number", "default": 2, "min": 0, "max": 20 },
+    "bail_gap": { "type": "number", "default": 0, "min": -20, "max": 40 },
+    "bail_offset_x": { "type": "number", "default": 0, "min": -200, "max": 200 },
+    "bail_offset_y": { "type": "number", "default": 0, "min": -200, "max": 200 },
 
     "text_enabled": { "type": "integer", "default": 1, "min": 0, "max": 1 },
     "line1": { "type": "string", "default": "CUSTOM" },
