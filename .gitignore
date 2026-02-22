@@ -29,6 +29,7 @@ Thumbs.db
 Dockerfile.local
 docker-compose.override.yml
 templates/custom/
+lib/BOSL2/.git/
 !assets/
 !assets/*.svg
 !assets/*.png

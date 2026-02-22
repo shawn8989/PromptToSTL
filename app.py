@@ -1,8 +1,10 @@
 import ast
 import json
+import re
 import subprocess
 import time
 import uuid
+import xml.etree.ElementTree as ET
 from pathlib import Path
 import streamlit as st
 
@@ -77,6 +79,38 @@ def eval_expr(value, params):
         return float(_eval(parsed))
     except Exception:
         return 0.0
+
+
+def _parse_svg_length(value: str | None) -> float | None:
+    if not value:
+        return None
+    match = re.search(r"[-+]?[0-9]*\\.?[0-9]+", value)
+    if not match:
+        return None
+    try:
+        return float(match.group(0))
+    except Exception:
+        return None
+
+
+def svg_size_from_bytes(svg_bytes: bytes) -> tuple[float, float] | None:
+    try:
+        root = ET.fromstring(svg_bytes)
+    except Exception:
+        return None
+    view_box = root.attrib.get("viewBox") or root.attrib.get("viewbox")
+    if view_box:
+        parts = re.split(r"[ ,]+", view_box.strip())
+        if len(parts) >= 4:
+            try:
+                return float(parts[2]), float(parts[3])
+            except Exception:
+                pass
+    width = _parse_svg_length(root.attrib.get("width"))
+    height = _parse_svg_length(root.attrib.get("height"))
+    if width and height:
+        return width, height
+    return None
 
 
 def render_template_builder():
@@ -472,6 +506,17 @@ with colL:
     if "emblem_enabled" in schema.get("params", {}):
         st.subheader("Emblem")
         uploaded_svg = st.file_uploader("SVG emblem", type=["svg"])
+        if template_id == "cuban_link_chain" and uploaded_svg is not None:
+            if int(params.get("emblem_auto_fit", 0)) == 1:
+                svg_size = svg_size_from_bytes(uploaded_svg.getvalue())
+                if svg_size:
+                    scale = float(params.get("emblem_scale", 1.0))
+                    pad_x = float(params.get("pad_x", 0))
+                    pad_y = float(params.get("pad_y", 0))
+                    req_w = svg_size[0] * scale + 2 * pad_x
+                    req_h = svg_size[1] * scale + 2 * pad_y
+                    params["plate_w"] = max(float(params.get("plate_w", 0)), req_w)
+                    params["plate_h"] = max(float(params.get("plate_h", 0)), req_h)
 
     layout_debug = None
     text_box = schema.get("text_box") or {}

@@ -1,58 +1,64 @@
-// Cuban link chain (improved)
-// Layout modes: line, ring, frame
+// Cuban link chain (BOSL2-based, clean-room)
+// Requires lib/BOSL2 vendored in this repo.
 
-chain_layout = 2; // fallback: 0=line, 1=ring, 2=frame
-chain_layout_mode = "frame"; // preferred: line | ring | frame
+include "../../lib/BOSL2/std.scad";
+include "../../lib/BOSL2/beziers.scad";
 
-link_count = 64;
-link_auto = 1;
-link_auto_size = 1;
-link_outer_d = 12;
-link_band = 3.5;
-link_th = 3;
-link_flatten = 0.65;
-link_overlap = 0.55;
-link_length_factor = 1.6;
-link_twist = 18;
-link_z_offset = 0.6;
-ring_radius = 60;
+// Chain layout
+chain_layout_mode = "frame"; // line | ring | frame
+chain_links = 54;
+chain_auto_links = 1;
+chain_spacing = 0;
+chain_scale = 1; // overall link scale
+ring_radius = 70;
 
-frame_auto = 1;
-frame_gap = 3;
-frame_w = 120;
-frame_h = 90;
-frame_corner_r = 12;
+// Frame path (for pendant wrap)
+frame_gap = 6;
+frame_corner_r = 18;
 
+// Link geometry (bezier sweep)
+link_cut = 2.4;
+link_thickness = 5.2;
+link_xr = 7.4;
+link_yr = 10;
+link_cd = 5.6;
+link_ca = 45;
+
+// Pendant plate
 plate_enabled = 1;
-plate_w = 50;
-plate_h = 20;
-plate_th = 3;
-plate_radius = 3;
+plate_w = 60;
+plate_h = 24;
+plate_th = 4;
+plate_radius = 4;
 plate_offset_x = 0;
 plate_offset_y = 0;
+plate_auto_fit = 0;
 
+// Bail (connector)
 bail_enabled = 1;
 bail_auto = 1;
-bail_w = 10;
-bail_h = 16;
-bail_th = 3;
-bail_radius = 2;
+bail_w = 12;
+bail_h = 18;
+bail_th = 4;
+bail_radius = 3;
 bail_gap = -2;
 bail_offset_x = 0;
 bail_offset_y = 0;
 
+// Text
 text_enabled = 1;
 line1 = "CUSTOM";
 line2 = "";
 line3 = "";
 text_size = 10;
-text_height = 1.0;
+text_height = 1.2;
 line_gap = 8;
 offset_x = 0;
 offset_y = 0;
 text_align = "center";
 emboss = 1;
 
+// Emblem
 emblem_enabled = 0;
 emblem_path = "";
 emblem_scale = 0.25;
@@ -61,8 +67,23 @@ emblem_y = 0;
 emblem_rot = 0;
 emblem_mode = 1;
 emblem_depth = 1.2;
+emblem_auto_fit = 0;
 
-$fn = 64;
+// Misc
+match_chain_thickness = 1;
+$fa = 6;
+$fs = 0.8;
+
+// Derived
+link_th = link_thickness * chain_scale;
+bez_xr = link_xr * chain_scale;
+bez_yr = link_yr * chain_scale;
+bez_cd = link_cd * chain_scale;
+cut_eff = link_cut * chain_scale;
+
+plate_th_eff = match_chain_thickness == 1 ? link_th : plate_th;
+bail_th_eff = match_chain_thickness == 1 ? link_th : bail_th;
+emblem_depth_eff = match_chain_thickness == 1 ? link_th : emblem_depth;
 
 module rounded_rect_2d(width, height, radius) {
   r_eff = min(radius, min(width, height) / 2);
@@ -74,156 +95,106 @@ module rounded_rect_2d(width, height, radius) {
   }
 }
 
-function _layout_mode() =
+function chain_mode() =
   chain_layout_mode == "line" ? 0 :
   chain_layout_mode == "ring" ? 1 :
   chain_layout_mode == "frame" ? 2 :
-  chain_layout;
+  2;
 
-function _link_outer_d() =
-  link_auto_size == 1 ? max(6, min(plate_w, plate_h) / 2.5) : link_outer_d;
-function _link_band(d) = min(link_band, d / 2 - 0.6);
-function _link_len(d) = d * link_length_factor;
-function _frame_w() = frame_auto == 1 ? (plate_w + 2 * frame_gap + _link_outer_d()) : frame_w;
-function _frame_h() = frame_auto == 1 ? (plate_h + 2 * frame_gap + _link_outer_d()) : frame_h;
-function _frame_r(w, h) = min(frame_corner_r, min(w, h) / 2);
-function _arc_len(r) = r * PI / 2;
-function _frame_perim(w, h, r) = 2 * (w - 2 * r) + 2 * (h - 2 * r) + 4 * _arc_len(r);
-function _wrap(t, perim) = t - floor(t / perim) * perim;
+function link_bezpath(xr, yr, cd, angle) =
+  flatten([
+    bez_begin([-xr, 0, 0], 90, cd, p=angle),
+    bez_tang([0, yr, 0], 0, cd, p=180-angle),
+    bez_tang([xr, 0, 0], -90, cd, p=angle),
+    bez_tang([0, -yr, 0], 0, cd, p=-(180-angle)),
+    bez_end([-xr, 0, 0], -90, cd, p=(180-angle))
+  ]);
 
-function _frame_at(t, w, h, r) =
-  let(
-    r_eff = max(0.01, _frame_r(w, h)),
-    seg1 = w - 2 * r_eff,
-    seg2 = h - 2 * r_eff,
-    arc = _arc_len(r_eff),
-    perim = _frame_perim(w, h, r_eff),
-    tt = _wrap(t, perim)
-  )
-  (tt < seg1) ? [ [-w/2 + r_eff + tt, h/2], 0 ] :
-  (tt < seg1 + arc) ?
-    let(
-      a = 90 - (tt - seg1) / arc * 90,
-      cx = w/2 - r_eff,
-      cy = h/2 - r_eff
-    )
-    [ [cx + r_eff * cos(a), cy + r_eff * sin(a)], a - 90 ] :
-  (tt < seg1 + arc + seg2) ?
-    [ [w/2, h/2 - r_eff - (tt - seg1 - arc)], -90 ] :
-  (tt < seg1 + 2 * arc + seg2) ?
-    let(
-      a = 0 - (tt - seg1 - arc - seg2) / arc * 90,
-      cx = w/2 - r_eff,
-      cy = -h/2 + r_eff
-    )
-    [ [cx + r_eff * cos(a), cy + r_eff * sin(a)], a - 90 ] :
-  (tt < 2 * seg1 + 2 * arc + seg2) ?
-    [ [w/2 - r_eff - (tt - seg1 - 2 * arc - seg2), -h/2], 180 ] :
-  (tt < 2 * seg1 + 3 * arc + seg2) ?
-    let(
-      a = -90 - (tt - 2 * seg1 - 2 * arc - seg2) / arc * 90,
-      cx = -w/2 + r_eff,
-      cy = -h/2 + r_eff
-    )
-    [ [cx + r_eff * cos(a), cy + r_eff * sin(a)], a - 90 ] :
-  (tt < 2 * seg1 + 3 * arc + 2 * seg2) ?
-    [ [-w/2, -h/2 + r_eff + (tt - 2 * seg1 - 3 * arc - seg2)], 90 ] :
-  let(
-    a = 180 - (tt - 2 * seg1 - 3 * arc - 2 * seg2) / arc * 90,
-    cx = -w/2 + r_eff,
-    cy = h/2 - r_eff
-  )
-  [ [cx + r_eff * cos(a), cy + r_eff * sin(a)], a - 90 ];
+link_path = link_bezpath(bez_xr, bez_yr, bez_cd, link_ca);
+link_vnf = bezpath_sweep(circle(r=link_th/2), link_path, splinesteps=12, closed=true);
+link_bounds = pointlist_bounds(vnf_vertices(link_vnf));
+link_dims = link_bounds[1] - link_bounds[0];
+link_w = link_dims[0];
+link_l = link_dims[1];
+link_h = max(0.2, link_dims[2] - cut_eff * 2);
 
-function _link_count(perim) =
-  link_auto == 1 ? max(4, floor(perim / (_link_len(_link_outer_d()) * (1 - link_overlap)))) : link_count;
+function frame_w() = plate_w + 2 * frame_gap + link_w;
+function frame_h() = plate_h + 2 * frame_gap + link_w;
+function frame_r() = min(frame_corner_r, min(frame_w(), frame_h()) / 2);
 
-module link_shape() {
-  d = _link_outer_d();
-  band = _link_band(d);
-  len = _link_len(d);
-  inner_w = max(1, d - 2 * band);
-  inner_len = max(inner_w, len - 2 * band);
-  scale([1, link_flatten, 1])
-    linear_extrude(height=link_th, center=true)
-      difference() {
-        rounded_rect_2d(len, d, d / 2);
-        rounded_rect_2d(inner_len, inner_w, inner_w / 2);
-      }
-}
+function link_step() = (link_l + link_th * 0.25) * 0.5 + chain_spacing;
 
-module chain_line() {
-  pitch = _link_len(_link_outer_d()) * (1 - link_overlap);
-  count = link_auto == 1 ? max(4, link_count) : link_count;
-  total = (count - 1) * pitch;
-  for (i = [0 : count - 1]) {
-    x = -total / 2 + i * pitch;
-    z = (i % 2 == 0) ? link_z_offset : -link_z_offset;
-    twist = (i % 2 == 0) ? link_twist : -link_twist;
-    translate([x, 0, z])
-      rotate([0, 0, twist])
-        link_shape();
-  }
-}
-
-module chain_ring() {
-  for (i = [0 : link_count - 1]) {
-    angle = 360 / link_count * i;
-    z = (i % 2 == 0) ? link_z_offset : -link_z_offset;
-    twist = (i % 2 == 0) ? link_twist : -link_twist;
-    rotate([0, 0, angle])
-      translate([ring_radius, 0, z])
-        rotate([0, 0, twist])
-          link_shape();
+module link_geom() {
+  intersection() {
+    vnf_polyhedron(link_vnf);
+    cube([link_w, link_l, link_h], center=true);
   }
 }
 
 module chain_frame() {
-  w = _frame_w();
-  h = _frame_h();
-  r = _frame_r(w, h);
-  perim = _frame_perim(w, h, r);
-  count = _link_count(perim);
-  step = perim / count;
-  for (i = [0 : count - 1]) {
-    t = i * step;
-    info = _frame_at(t, w, h, r);
-    pos = info[0];
-    ang = info[1];
-    z = (i % 2 == 0) ? link_z_offset : -link_z_offset;
-    twist = (i % 2 == 0) ? link_twist : -link_twist;
-    translate([pos[0], pos[1], z])
-      rotate([0, 0, ang + twist])
-        link_shape();
+  path = rect([frame_w(), frame_h()], rounding=frame_r());
+  if (chain_auto_links == 1) {
+    path_copies(path, spacing=link_step(), closed=true)
+      zrot(90)
+        link_geom();
+  } else {
+    path_copies(path, n=chain_links, closed=true)
+      zrot(90)
+        link_geom();
+  }
+}
+
+module chain_ring() {
+  path = circle(r=ring_radius);
+  if (chain_auto_links == 1) {
+    path_copies(path, spacing=link_step(), closed=true)
+      zrot(90)
+        link_geom();
+  } else {
+    path_copies(path, n=chain_links, closed=true)
+      zrot(90)
+        link_geom();
+  }
+}
+
+module chain_line() {
+  len = max(10, chain_links * link_step());
+  path = [[-len/2, 0], [len/2, 0]];
+  if (chain_auto_links == 1) {
+    path_copies(path, spacing=link_step(), closed=false)
+      zrot(90)
+        link_geom();
+  } else {
+    path_copies(path, n=chain_links, closed=false)
+      zrot(90)
+        link_geom();
   }
 }
 
 module chain_body() {
-  if (_layout_mode() == 1) {
-    chain_ring();
-  } else if (_layout_mode() == 2) {
-    chain_frame();
-  } else {
+  if (chain_mode() == 0) {
     chain_line();
+  } else if (chain_mode() == 1) {
+    chain_ring();
+  } else {
+    chain_frame();
   }
 }
 
 module plate_body() {
   if (plate_enabled == 1) {
     translate([plate_offset_x, plate_offset_y, 0])
-      linear_extrude(height=plate_th, center=true)
+      linear_extrude(height=plate_th_eff, center=true)
         rounded_rect_2d(plate_w, plate_h, plate_radius);
   }
 }
 
 module bail_body() {
   if (bail_enabled == 1) {
-    w = _frame_w();
-    h = _frame_h();
     bx = bail_auto == 1 ? 0 : bail_offset_x;
-    by = bail_auto == 1 ? (h / 2 - bail_h / 2 - bail_gap) : bail_offset_y;
+    by = bail_auto == 1 ? (frame_h()/2 - bail_h/2 - bail_gap) : bail_offset_y;
     translate([plate_offset_x + bx, plate_offset_y + by, 0])
-      linear_extrude(height=bail_th, center=true)
+      linear_extrude(height=bail_th_eff, center=true)
         rounded_rect_2d(bail_w, bail_h, bail_radius);
   }
 }
@@ -254,7 +225,7 @@ module emblem_3d(z) {
     translate([plate_offset_x + emblem_x, plate_offset_y + emblem_y, z])
       rotate([0, 0, emblem_rot])
         scale([emblem_scale, emblem_scale, 1])
-          linear_extrude(height=emblem_depth)
+          linear_extrude(height=emblem_depth_eff)
             import(emblem_path);
   }
 }
@@ -267,14 +238,14 @@ module body() {
   }
 }
 
-plate_top_z = plate_th / 2;
+plate_top_z = plate_th_eff / 2;
 
 if (emboss == 1) {
   union() {
     difference() {
       body();
       if (emblem_mode == 0) {
-        emblem_3d(plate_top_z - emblem_depth);
+        emblem_3d(plate_top_z - emblem_depth_eff);
       }
     }
     translate([0, 0, plate_top_z]) text_union();
@@ -287,7 +258,7 @@ if (emboss == 1) {
     body();
     translate([0, 0, plate_top_z - text_height]) text_union();
     if (emblem_mode == 0) {
-      emblem_3d(plate_top_z - emblem_depth);
+      emblem_3d(plate_top_z - emblem_depth_eff);
     }
   }
   if (emblem_mode == 1) {
