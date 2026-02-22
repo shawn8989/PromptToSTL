@@ -1,8 +1,8 @@
 // Cuban link chain (BOSL2-based, clean-room)
 // Requires lib/BOSL2 vendored in this repo.
 
-include "../../lib/BOSL2/std.scad";
-include "../../lib/BOSL2/beziers.scad";
+include <../../lib/BOSL2/std.scad>;
+include <../../lib/BOSL2/beziers.scad>;
 
 // Chain layout
 chain_layout_mode = "frame"; // line | ring | frame
