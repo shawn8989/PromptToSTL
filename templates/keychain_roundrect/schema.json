@@ -3,6 +3,7 @@
   "label": "Keychain (Rounded Rectangle)",
   "scad_file": "keychain.scad",
   "max_lines": 2,
+  "emblem_support": true,
   "text_box": {
     "box_w": "w - 2*pad_x - 2*(8 + 5.5/2)",
     "box_h": "h - 2*pad_y",

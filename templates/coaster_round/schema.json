@@ -3,6 +3,7 @@
   "label": "Coaster (Round)",
   "scad_file": "model.scad",
   "max_lines": 2,
+  "emblem_support": true,
   "text_box": {
     "box_w": "diameter - 2*pad",
     "box_h": "diameter - 2*pad",

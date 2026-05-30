@@ -9,6 +9,7 @@ import streamlit as st
 from dotenv import load_dotenv
 
 from src.core.catalog import list_templates, load_template
+from src.core.image_prep import prepare_lithophane_image
 from src.core.layout import layout_text
 from src.core.runner import run_openscad
 from src.core.validate import validate_stl
@@ -142,6 +143,8 @@ with colL:
     params = {}
     intent_params = st.session_state.get("intent_params") if intent_template_id == template_id else None
     for k, spec in schema["params"].items():
+        if spec.get("hidden"):
+            continue
         t = spec["type"]
         default = spec.get("default")
         if intent_params and k in intent_params:
@@ -173,7 +176,15 @@ with colL:
         else:
             st.warning(f"Unknown type {t} for {k}")
 
-    if template_id in {"keychain_roundrect", "coaster_round", "nameplate"}:
+    if schema.get("accepts_image"):
+        st.subheader("Photo")
+        uploaded_photo = st.file_uploader(
+            "Upload photo (JPG, PNG, HEIC)", type=["jpg", "jpeg", "png", "heic"]
+        )
+    else:
+        uploaded_photo = None
+
+    if schema.get("emblem_support"):
         st.subheader("Emblem")
         uploaded_svg = st.file_uploader("SVG emblem", type=["svg"])
 
@@ -441,7 +452,19 @@ if st.session_state.pop("build_requested", False):
     stl_path = job_dir / f"model_{stamp}.stl"
     log_path = job_dir / "logs.txt"
 
-    if template_id in {"keychain_roundrect", "coaster_round", "nameplate"} and uploaded_svg is not None:
+    if schema.get("accepts_image"):
+        if uploaded_photo is None:
+            st.error("This template requires a photo — upload one before building.")
+            st.stop()
+        photo_png_path = job_dir / "photo.png"
+        photo_cols, photo_rows = prepare_lithophane_image(
+            uploaded_photo.getvalue(), photo_png_path
+        )
+        params["photo_path"] = str(photo_png_path.resolve())
+        params["photo_cols"] = photo_cols
+        params["photo_rows"] = photo_rows
+
+    if schema.get("emblem_support") and uploaded_svg is not None:
         emblem_path = job_dir / "emblem.svg"
         emblem_path.write_bytes(uploaded_svg.getvalue())
         params["emblem_enabled"] = 1
