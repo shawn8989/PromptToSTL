@@ -1,0 +1,17 @@
+{
+  "template_id": "lithophane",
+  "label": "Lithophane (Backlit Image Panel)",
+  "scad_file": "model.scad",
+  "print_note": "Print vertically (standing up) for best results. Backlight with LED for image reveal.",
+  "lithophane_mode": true,
+  "params": {
+    "width":     { "type": "number", "default": 90,  "min": 30,  "max": 200 },
+    "height":    { "type": "number", "default": 70,  "min": 20,  "max": 200 },
+    "min_thick": { "type": "number", "default": 0.6, "min": 0.4, "max": 2.0 },
+    "max_thick": { "type": "number", "default": 3.0, "min": 1.5, "max": 8.0 },
+    "border":    { "type": "number", "default": 3.0, "min": 0.0, "max": 15.0 },
+    "dat_file":  { "type": "string", "default": "",  "hidden": true },
+    "dat_w":     { "type": "integer","default": 100, "min": 2,   "max": 1000, "hidden": true },
+    "dat_h":     { "type": "integer","default": 75,  "min": 2,   "max": 1000, "hidden": true }
+  }
+}
