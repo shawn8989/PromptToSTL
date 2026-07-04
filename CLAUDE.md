@@ -25,7 +25,7 @@ pytest              # run all tests
 pytest tests/test_layout.py  # single test file
 ```
 
-No `requirements.txt` is committed — install dependencies from the README stack: `streamlit`, `trimesh`, `streamlit-stl`, `langchain-openai`, `python-dotenv`, and optionally `pyvista`.
+Dependencies are in `requirements.txt` (includes `Pillow` for lithophane image preprocessing). Install with `pip install -r requirements.txt`.
 
 The `OPENAI_API_KEY` environment variable (loaded via `.env`) is required for "Describe it" / intent mode (`src/intent/router.py`). The rest of the app works without it.
 

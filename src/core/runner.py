@@ -12,14 +12,15 @@ def run_openscad(openscad_exe: str, scad_path: Path, out_stl: Path, params: dict
     cmd = [openscad_exe, "-o", str(out_stl)]
     for k, v in params.items():
         if isinstance(v, str):
-            cmd += ["-D", f'{k}="{v}"']
+            escaped = v.replace("\\", "\\\\").replace('"', '\\"')
+            cmd += ["-D", f'{k}="{escaped}"']
         elif v is None:
             continue
         else:
             cmd += ["-D", f"{k}={v}"]
     cmd.append(str(scad_path))
 
-    p = subprocess.run(cmd, capture_output=True, text=True)
+    p = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
     logs = (p.stdout or "") + ("\n" + p.stderr if p.stderr else "")
     if p.returncode != 0:
         raise RuntimeError(f"OpenSCAD failed (code {p.returncode}).\n{logs}")

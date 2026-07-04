@@ -1,0 +1,7 @@
+streamlit>=1.30
+streamlit-stl
+Pillow>=10.0
+trimesh
+langchain-openai
+python-dotenv
+pytest

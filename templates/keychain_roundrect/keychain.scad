@@ -18,8 +18,8 @@ emblem_depth = 1.2;
 emboss = 1;           // 1=emboss, 0=engrave
 
 // Base (mm)
-w = 70;
-h = 22;
+w = 80;
+h = 24;
 th = 4;
 
 // Hole (mm)

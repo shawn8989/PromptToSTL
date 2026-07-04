@@ -151,18 +151,10 @@ with colL:
             default = intent_params.get(k)
 
         if t == "string":
-            if template_id == "nameplate" and k == "text_align":
-                params[k] = st.selectbox(
-                    k,
-                    ["left", "center", "right"],
-                    index=["left", "center", "right"].index(str(default)) if default in {"left", "center", "right"} else 1,
-                )
-            elif template_id == "nameplate" and k == "text_anchor_y":
-                params[k] = st.selectbox(
-                    k,
-                    ["top", "center", "bottom"],
-                    index=["top", "center", "bottom"].index(str(default)) if default in {"top", "center", "bottom"} else 1,
-                )
+            options = spec.get("options")
+            if options:
+                idx = options.index(str(default)) if default in options else 0
+                params[k] = st.selectbox(k, options, index=idx)
             else:
                 params[k] = st.text_input(k, value=str(default) if default is not None else "")
         elif t in {"int", "integer"}:
@@ -247,42 +239,6 @@ with colL:
                 st.warning(layout["warning"])
             elif layout.get("truncated"):
                 st.warning("Text was truncated to fit the text box.")
-
-    emblem_snap = params.get("emblem_snap") if isinstance(params.get("emblem_snap"), str) else None
-    if emblem_snap and emblem_snap != "custom":
-        box_w = float(params.get("text_box_w", 0.0))
-        box_h = float(params.get("text_box_h", 0.0))
-        box_off_x = float(params.get("text_box_offset_x", 0.0))
-        box_off_y = float(params.get("text_box_offset_y", 0.0))
-        margin = min(box_w, box_h) * 0.1 if min(box_w, box_h) > 0 else 0.0
-
-        def snap_pos(kind):
-            if kind == "center":
-                return 0.0, 0.0
-            if kind == "left":
-                return -box_w / 2 + margin, 0.0
-            if kind == "right":
-                return box_w / 2 - margin, 0.0
-            if kind == "above_text":
-                return 0.0, box_h / 2 - margin
-            if kind == "below_text":
-                return 0.0, -box_h / 2 + margin
-            if kind == "top_left":
-                return -box_w / 2 + margin, box_h / 2 - margin
-            if kind == "top_right":
-                return box_w / 2 - margin, box_h / 2 - margin
-            if kind == "bottom_left":
-                return -box_w / 2 + margin, -box_h / 2 + margin
-            if kind == "bottom_right":
-                return box_w / 2 - margin, -box_h / 2 + margin
-            return 0.0, 0.0
-
-        snap_x, snap_y = snap_pos(emblem_snap)
-        autocenter = int(params.get("emblem_autocenter", 1)) == 1
-        if emblem_snap == "center" and autocenter:
-            snap_x, snap_y = 0.0, 0.0
-        params["emblem_x"] = snap_x + box_off_x
-        params["emblem_y"] = snap_y + box_off_y
 
     emblem_snap = params.get("emblem_snap") if isinstance(params.get("emblem_snap"), str) else None
     if emblem_snap and emblem_snap != "custom":
@@ -452,59 +408,65 @@ if st.session_state.pop("build_requested", False):
     stl_path = job_dir / f"model_{stamp}.stl"
     log_path = job_dir / "logs.txt"
 
+    build_ok = True
+
     if schema.get("accepts_image"):
         if uploaded_photo is None:
             st.error("This template requires a photo — upload one before building.")
-            st.stop()
-        photo_png_path = job_dir / "photo.png"
-        photo_cols, photo_rows = prepare_lithophane_image(
-            uploaded_photo.getvalue(), photo_png_path
-        )
-        params["photo_path"] = str(photo_png_path.resolve())
-        params["photo_cols"] = photo_cols
-        params["photo_rows"] = photo_rows
+            build_ok = False
+        else:
+            photo_png_path = job_dir / "photo.png"
+            photo_cols, photo_rows = prepare_lithophane_image(
+                uploaded_photo.getvalue(), photo_png_path
+            )
+            params["photo_path"] = str(photo_png_path.resolve())
+            params["photo_cols"] = photo_cols
+            params["photo_rows"] = photo_rows
 
-    if schema.get("emblem_support") and uploaded_svg is not None:
+    if build_ok and schema.get("emblem_support") and uploaded_svg is not None:
         emblem_path = job_dir / "emblem.svg"
         emblem_path.write_bytes(uploaded_svg.getvalue())
         params["emblem_enabled"] = 1
         params["emblem_path"] = str(emblem_path.resolve())
 
-    spec_path.write_text(json.dumps(
-        {"template_id": template_id, "params": params},
-        indent=2
-    ))
+    if build_ok:
+        spec_path.write_text(json.dumps(
+            {"template_id": template_id, "params": params},
+            indent=2
+        ))
 
-    try:
-        logs = run_openscad(openscad_exe, scad_path, stl_path, params)
-        st.session_state["last_stl_path"] = str(stl_path)
-        st.session_state["preview_nonce"] += 1
-        log_path.write_text(logs)
+        try:
+            logs = run_openscad(openscad_exe, scad_path, stl_path, params)
+            st.session_state["last_stl_path"] = str(stl_path)
+            st.session_state["preview_nonce"] += 1
+            log_path.write_text(logs)
 
-        report = validate_stl(stl_path)
-        (job_dir / "report.json").write_text(json.dumps(report, indent=2))
+            report = validate_stl(stl_path)
+            (job_dir / "report.json").write_text(json.dumps(report, indent=2))
 
-        st.success("Build completed")
-        st.code(logs[-2000:] if len(logs) > 2000 else logs)
+            st.success("Build completed")
+            st.code(logs[-2000:] if len(logs) > 2000 else logs)
 
+            st.write("Validation report:")
+            st.json(report)
 
-        st.write("Validation report:")
-        st.json(report)
+            last_path = st.session_state.get("last_stl_path")
+            if last_path:
+                last_file = Path(last_path)
+                if last_file.exists():
+                    with open(last_file, "rb") as f:
+                        st.download_button("Download STL", f, file_name=last_file.name)
 
-        last_path = st.session_state.get("last_stl_path")
-        if last_path:
-            last_file = Path(last_path)
-            if last_file.exists():
-                with open(last_file, "rb") as f:
-                    st.download_button("Download STL", f, file_name=last_file.name)
+            if hasattr(st, "rerun"):
+                st.rerun()
+            else:
+                st.experimental_rerun()
 
-        st.info("Build complete. Use Refresh preview if the viewer does not update.")
-
-    except Exception as e:
-        st.error(str(e))
-        if log_path.exists():
-            st.caption("Last logs:")
-            st.code(log_path.read_text()[-2000:])
+        except Exception as e:
+            st.error(str(e))
+            if log_path.exists():
+                st.caption("Last logs:")
+                st.code(log_path.read_text()[-2000:])
 
 else:
     st.info("Click Build STL to generate output into /out/<job>/")

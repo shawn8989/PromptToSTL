@@ -85,11 +85,13 @@
     },
     "text_align": {
       "type": "string",
-      "default": "center"
+      "default": "center",
+      "options": ["left", "center", "right"]
     },
     "text_anchor_y": {
       "type": "string",
-      "default": "center"
+      "default": "center",
+      "options": ["top", "center", "bottom"]
     },
     "text_margin_x": {
       "type": "number",
