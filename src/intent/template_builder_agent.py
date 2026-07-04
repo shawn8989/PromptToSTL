@@ -5,8 +5,6 @@ import os
 import re
 from typing import Any, Dict
 
-import anthropic
-
 
 def _parse_json(text: str) -> Dict[str, Any]:
     try:
@@ -38,7 +36,17 @@ def propose_template_spec(description: str) -> Dict[str, Any]:
         "Use reasonable defaults when uncertain. Do not include any other keys."
     )
 
-    client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
+    api_key = os.environ.get("ANTHROPIC_API_KEY")
+    if not api_key:
+        raise RuntimeError(
+            "AI template proposals need an ANTHROPIC_API_KEY. Add one to your "
+            ".env file, or build a template manually with the form below."
+        )
+
+    # Lazy import keeps app startup fast and makes the AI dependency optional.
+    import anthropic
+
+    client = anthropic.Anthropic(api_key=api_key)
     response = client.messages.create(
         model="claude-haiku-4-5-20251001",
         max_tokens=1024,

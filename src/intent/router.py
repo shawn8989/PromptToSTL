@@ -5,8 +5,6 @@ import os
 import re
 from typing import Any, Dict
 
-import anthropic
-
 
 def _coerce_value(value: Any, spec: Dict[str, Any]) -> Any:
     default = spec.get("default")
@@ -63,6 +61,17 @@ def _parse_json(text: str) -> Dict[str, Any]:
     return {}
 
 
+def _fallback(templates: Dict[str, Dict[str, Any]], notes: str) -> Dict[str, Any]:
+    """Return a safe default proposal (first template + defaults) with a note."""
+    first_template = next(iter(templates.keys()))
+    schema = templates[first_template]
+    return {
+        "template_id": first_template,
+        "params": _sanitize_params(schema, {}),
+        "notes": notes,
+    }
+
+
 def route_intent(description: str, templates: Dict[str, Dict[str, Any]]) -> Dict[str, Any]:
     description = (description or "").strip()
     if not description:
@@ -94,14 +103,32 @@ def route_intent(description: str, templates: Dict[str, Dict[str, Any]]) -> Dict
         "templates": template_list,
     }
 
-    client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
-    response = client.messages.create(
-        model="claude-haiku-4-5-20251001",
-        max_tokens=1024,
-        system=system_prompt,
-        messages=[{"role": "user", "content": json.dumps(user_prompt)}],
-    )
-    data = _parse_json(response.content[0].text if response.content else "")
+    api_key = os.environ.get("ANTHROPIC_API_KEY")
+    if not api_key:
+        return _fallback(
+            templates,
+            "AI routing is off (no ANTHROPIC_API_KEY set). Showing a default "
+            "template — pick one and edit the parameters manually.",
+        )
+
+    # Lazy import keeps app startup fast and makes the AI dependency optional.
+    import anthropic
+
+    try:
+        client = anthropic.Anthropic(api_key=api_key)
+        response = client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=1024,
+            system=system_prompt,
+            messages=[{"role": "user", "content": json.dumps(user_prompt)}],
+        )
+        data = _parse_json(response.content[0].text if response.content else "")
+    except Exception as exc:  # noqa: BLE001 — degrade gracefully on any API error
+        return _fallback(
+            templates,
+            f"AI routing failed ({exc.__class__.__name__}); showing a default "
+            "template. Edit the parameters manually.",
+        )
 
     template_id = data.get("template_id")
     if template_id not in templates:
