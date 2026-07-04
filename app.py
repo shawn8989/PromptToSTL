@@ -1,838 +1,365 @@
-import ast
+"""PromptToSTL — main Streamlit app."""
 import json
-import re
-import subprocess
 import time
 import uuid
-import xml.etree.ElementTree as ET
 from pathlib import Path
-import streamlit as st
 
+import streamlit as st
 from dotenv import load_dotenv
 
 from src.core.catalog import list_templates, load_template
-from src.core.layout import layout_text
 from src.core.runner import run_openscad
 from src.core.template_builder import (
-    EmblemSpec,
-    TemplateSpec,
-    TextSpec,
-    coerce_template_spec,
-    create_template,
-    sanitize_template_id,
-    spec_to_defaults,
+    EmblemSpec, TemplateSpec, TextSpec,
+    coerce_template_spec, create_template, sanitize_template_id, spec_to_defaults,
 )
 from src.core.validate import validate_stl
 from src.intent.router import route_intent
 from src.intent.template_builder_agent import propose_template_spec
-from streamlit_stl import stl_from_file
-import trimesh
-try:
-    import pyvista as pv
-except Exception:
-    pv = None
-
-
-DEFAULT_OPENSCAD = "openscad"  # on mac: usually in PATH
-
-OUT_DIR = Path(__file__).resolve().parent / "out"
-PLACEHOLDER_STL = Path(__file__).resolve().parent / "templates" / "placeholder.stl"
-TEXT_MARGIN = 0.9
+from src.ui.helpers import save_image_as_dat
+from src.ui.params_panel import render_params, apply_text_layout
+from src.ui.emblem_panel import render_emblem_section
+from src.ui.lithophane_panel import render_lithophane_section
+from src.ui.preview_panel import render_preview_panel
 
 load_dotenv()
 
-MODE_BUILD_TEMPLATE = "BUILD_TEMPLATE"
-MODE_CREATE_TEMPLATE = "CREATE_TEMPLATE"
+OUT_DIR = Path(__file__).resolve().parent / "out"
+DEFAULT_OPENSCAD = "openscad"
+
+st.set_page_config(page_title="PromptToSTL", layout="wide")
+st.title("PromptToSTL")
+
+# ── Session state defaults ────────────────────────────────────────────────────
+for key, val in [("preview_nonce", 0), ("last_build_id", 0)]:
+    st.session_state.setdefault(key, val)
+
+# ── Sidebar ───────────────────────────────────────────────────────────────────
+with st.sidebar:
+    st.header("Mode")
+    app_mode = st.radio("", ["Build", "Create Template"], horizontal=True)
+    if app_mode == "Build":
+        openscad_exe = st.text_input("OpenSCAD path", value=DEFAULT_OPENSCAD)
+        build_mode = st.radio("Input", ["Manual", "Describe it"], horizontal=True)
 
 
-def eval_expr(value, params):
-    if isinstance(value, (int, float)):
-        return float(value)
-    if not isinstance(value, str):
-        return 0.0
-
-    def _eval(node):
-        if isinstance(node, ast.Expression):
-            return _eval(node.body)
-        if isinstance(node, ast.BinOp) and isinstance(node.op, (ast.Add, ast.Sub, ast.Mult, ast.Div)):
-            left = _eval(node.left)
-            right = _eval(node.right)
-            if isinstance(node.op, ast.Add):
-                return left + right
-            if isinstance(node.op, ast.Sub):
-                return left - right
-            if isinstance(node.op, ast.Mult):
-                return left * right
-            if isinstance(node.op, ast.Div):
-                return left / right if right != 0 else 0.0
-        if isinstance(node, ast.UnaryOp) and isinstance(node.op, (ast.UAdd, ast.USub)):
-            val = _eval(node.operand)
-            return val if isinstance(node.op, ast.UAdd) else -val
-        if isinstance(node, ast.Name):
-            return float(params.get(node.id, 0.0))
-        if isinstance(node, ast.Constant) and isinstance(node.value, (int, float)):
-            return float(node.value)
-        return 0.0
-
-    try:
-        parsed = ast.parse(value, mode="eval")
-        return float(_eval(parsed))
-    except Exception:
-        return 0.0
-
-
-def _parse_svg_length(value: str | None) -> float | None:
-    if not value:
-        return None
-    match = re.search(r"[-+]?[0-9]*\\.?[0-9]+", value)
-    if not match:
-        return None
-    try:
-        return float(match.group(0))
-    except Exception:
-        return None
-
-
-def svg_size_from_bytes(svg_bytes: bytes) -> tuple[float, float] | None:
-    try:
-        root = ET.fromstring(svg_bytes)
-    except Exception:
-        return None
-    view_box = root.attrib.get("viewBox") or root.attrib.get("viewbox")
-    if view_box:
-        parts = re.split(r"[ ,]+", view_box.strip())
-        if len(parts) >= 4:
-            try:
-                return float(parts[2]), float(parts[3])
-            except Exception:
-                pass
-    width = _parse_svg_length(root.attrib.get("width"))
-    height = _parse_svg_length(root.attrib.get("height"))
-    if width and height:
-        return width, height
-    return None
-
-
-def render_template_builder():
+# ═══════════════════════════════════════════════════════════════════════════════
+# CREATE TEMPLATE MODE
+# ═══════════════════════════════════════════════════════════════════════════════
+if app_mode == "Create Template":
     st.header("Template Builder")
-    st.caption("Create a new template using predefined building blocks.")
+    st.caption("Create a reusable parametric template from building blocks.")
 
-    with st.expander("Describe a template (AI)", expanded=False):
-        description = st.text_area("Describe the template", height=120, key="builder_description")
+    with st.expander("AI Proposal (describe the template)", expanded=False):
+        desc = st.text_area("Describe the template", height=100, key="builder_desc")
         if st.button("Generate proposal"):
             try:
-                proposal = propose_template_spec(description)
-                st.session_state["builder_proposal"] = proposal
+                st.session_state["builder_proposal"] = propose_template_spec(desc)
             except Exception as err:
                 st.error(f"AI proposal failed: {err}")
-
         proposal = st.session_state.get("builder_proposal")
         if proposal:
             st.json(proposal)
-            if st.button("Apply proposal to form"):
+            if st.button("Apply to form"):
                 try:
                     spec = coerce_template_spec(proposal)
                     st.session_state["builder_defaults"] = spec_to_defaults(spec)
-                    if hasattr(st, "rerun"):
-                        st.rerun()
-                    else:
-                        st.experimental_rerun()
+                    st.rerun()
                 except Exception as err:
-                    st.error(f"Failed to apply proposal: {err}")
+                    st.error(f"Could not apply: {err}")
 
     defaults = st.session_state.get("builder_defaults") or {}
-    defaults_text = defaults.get("text") or {}
-    defaults_emblem = defaults.get("emblem") or {}
+    dt = defaults.get("text") or {}
+    de = defaults.get("emblem") or {}
     shape_default = defaults.get("shape", "rounded_rect")
-    shape_label_default = "Rounded Rectangle" if shape_default == "rounded_rect" else "Circle"
 
     with st.form("template_builder"):
         template_id_raw = st.text_input("Template ID", value=defaults.get("template_id", "custom_template"))
         label = st.text_input("Label", value=defaults.get("label", "Custom Template"))
         shape_label = st.selectbox(
-            "Base shape",
-            ["Rounded Rectangle", "Circle"],
-            index=0 if shape_label_default == "Rounded Rectangle" else 1,
+            "Base shape", ["Rounded Rectangle", "Circle"],
+            index=0 if shape_default == "rounded_rect" else 1,
         )
-
         if shape_label == "Rounded Rectangle":
-            width = st.number_input(
-                "Width (mm)",
-                value=float(defaults.get("width", 80.0)),
-                min_value=10.0,
-                max_value=400.0,
-            )
-            height = st.number_input(
-                "Height (mm)",
-                value=float(defaults.get("height", 30.0)),
-                min_value=10.0,
-                max_value=400.0,
-            )
-            radius = st.number_input(
-                "Corner radius (mm)",
-                value=float(defaults.get("radius", 5.0)),
-                min_value=0.0,
-                max_value=200.0,
-            )
+            width = st.number_input("Width (mm)", value=float(defaults.get("width", 80.0)), min_value=10.0, max_value=400.0)
+            height = st.number_input("Height (mm)", value=float(defaults.get("height", 30.0)), min_value=10.0, max_value=400.0)
+            radius = st.number_input("Corner radius (mm)", value=float(defaults.get("radius", 5.0)), min_value=0.0, max_value=200.0)
             diameter = 0.0
         else:
-            diameter = st.number_input(
-                "Diameter (mm)",
-                value=float(defaults.get("diameter", 70.0)),
-                min_value=10.0,
-                max_value=400.0,
-            )
-            width = 0.0
-            height = 0.0
-            radius = 0.0
+            diameter = st.number_input("Diameter (mm)", value=float(defaults.get("diameter", 70.0)), min_value=10.0, max_value=400.0)
+            width = height = radius = 0.0
 
-        thickness = st.number_input(
-            "Thickness (mm)",
-            value=float(defaults.get("thickness", 4.0)),
-            min_value=1.0,
-            max_value=50.0,
-        )
+        thickness = st.number_input("Thickness (mm)", value=float(defaults.get("thickness", 4.0)), min_value=1.0, max_value=50.0)
 
-        include_text_default = True if not defaults else bool(defaults_text)
-        include_text = st.checkbox("Include text region", value=include_text_default)
+        include_text = st.checkbox("Include text region", value=bool(dt) if defaults else True)
         text_spec = None
         if include_text:
-            max_lines = st.selectbox(
-                "Max lines",
-                [1, 2, 3],
-                index=max(0, min(2, int(defaults_text.get("max_lines", 2)) - 1)),
-            )
-            line1 = st.text_input("Default line 1", value=defaults_text.get("line1", "YOUR TEXT"))
-            line2 = (
-                st.text_input("Default line 2", value=defaults_text.get("line2", ""))
-                if max_lines >= 2
-                else ""
-            )
-            line3 = (
-                st.text_input("Default line 3", value=defaults_text.get("line3", ""))
-                if max_lines >= 3
-                else ""
-            )
-            text_size = st.number_input(
-                "Text size (mm)",
-                value=float(defaults_text.get("text_size", 12.0)),
-                min_value=4.0,
-                max_value=60.0,
-            )
-            text_height = st.number_input(
-                "Text depth (mm)",
-                value=float(defaults_text.get("text_height", 1.2)),
-                min_value=0.2,
-                max_value=10.0,
-            )
-            line_gap = st.number_input(
-                "Line gap (mm)",
-                value=float(defaults_text.get("line_gap", 8.0)),
-                min_value=0.0,
-                max_value=60.0,
-            )
-            pad_x = st.number_input(
-                "Text padding X (mm)",
-                value=float(defaults_text.get("pad_x", 6.0)),
-                min_value=0.0,
-                max_value=200.0,
-            )
-            pad_y = st.number_input(
-                "Text padding Y (mm)",
-                value=float(defaults_text.get("pad_y", 4.0)),
-                min_value=0.0,
-                max_value=200.0,
-            )
-            text_align_value = str(defaults_text.get("text_align", "center"))
-            text_align_options = ["center", "left", "right"]
-            text_align_index = text_align_options.index(text_align_value) if text_align_value in text_align_options else 0
-            text_align = st.selectbox("Text align", text_align_options, index=text_align_index)
-            text_mode = st.selectbox(
-                "Text mode",
-                ["Emboss", "Engrave"],
-                index=0 if int(defaults_text.get("emboss", 1)) == 1 else 1,
-            )
-            emboss = 1 if text_mode == "Emboss" else 0
-
+            max_lines = st.selectbox("Max lines", [1, 2, 3], index=max(0, min(2, int(dt.get("max_lines", 2)) - 1)))
+            line1 = st.text_input("Default line 1", value=dt.get("line1", "YOUR TEXT"))
+            line2 = st.text_input("Default line 2", value=dt.get("line2", "")) if max_lines >= 2 else ""
+            line3 = st.text_input("Default line 3", value=dt.get("line3", "")) if max_lines >= 3 else ""
+            text_size = st.number_input("Text size (mm)", value=float(dt.get("text_size", 12.0)), min_value=4.0, max_value=60.0)
+            text_height = st.number_input("Text depth (mm)", value=float(dt.get("text_height", 1.2)), min_value=0.2, max_value=10.0)
+            line_gap = st.number_input("Line gap (mm)", value=float(dt.get("line_gap", 8.0)), min_value=0.0, max_value=60.0)
+            pad_x = st.number_input("Padding X (mm)", value=float(dt.get("pad_x", 6.0)), min_value=0.0, max_value=200.0)
+            pad_y = st.number_input("Padding Y (mm)", value=float(dt.get("pad_y", 4.0)), min_value=0.0, max_value=200.0)
+            align_opts = ["center", "left", "right"]
+            text_align = st.selectbox("Text align", align_opts, index=align_opts.index(dt.get("text_align", "center")))
+            emboss = 1 if st.selectbox("Text mode", ["Emboss", "Engrave"], index=0 if int(dt.get("emboss", 1)) == 1 else 1) == "Emboss" else 0
             text_spec = TextSpec(
-                enabled=True,
-                max_lines=max_lines,
-                line1=line1,
-                line2=line2,
-                line3=line3,
-                text_size=text_size,
-                text_height=text_height,
-                line_gap=line_gap,
-                pad_x=pad_x,
-                pad_y=pad_y,
-                emboss=emboss,
-                text_align=text_align,
+                enabled=True, max_lines=max_lines, line1=line1, line2=line2, line3=line3,
+                text_size=text_size, text_height=text_height, line_gap=line_gap,
+                pad_x=pad_x, pad_y=pad_y, emboss=emboss, text_align=text_align,
             )
 
-        include_emblem_default = bool(defaults_emblem) if defaults else False
-        include_emblem = st.checkbox("Include emblem region", value=include_emblem_default)
+        include_emblem = st.checkbox("Include emblem region", value=bool(de) if defaults else False)
         emblem_spec = None
         if include_emblem:
-            emblem_snap_options = [
-                "custom",
-                "center",
-                "left",
-                "right",
-                "above_text",
-                "below_text",
-                "top_left",
-                "top_right",
-                "bottom_left",
-                "bottom_right",
-            ]
-            emblem_snap_value = str(defaults_emblem.get("snap", "custom"))
-            emblem_snap_index = (
-                emblem_snap_options.index(emblem_snap_value)
-                if emblem_snap_value in emblem_snap_options
-                else 0
-            )
-            emblem_snap = st.selectbox("Emblem snap", emblem_snap_options, index=emblem_snap_index)
-            emblem_autocenter = st.checkbox("Auto-center emblem", value=bool(defaults_emblem.get("autocenter", 1)))
-            emblem_scale = st.number_input(
-                "Emblem scale",
-                value=float(defaults_emblem.get("scale", 0.25)),
-                min_value=0.05,
-                max_value=5.0,
-            )
-            emblem_depth = st.number_input(
-                "Emblem depth (mm)",
-                value=float(defaults_emblem.get("depth", 1.2)),
-                min_value=0.2,
-                max_value=10.0,
-            )
-            emblem_x = st.number_input(
-                "Emblem X (mm)",
-                value=float(defaults_emblem.get("x", 0.0)),
-                min_value=-200.0,
-                max_value=200.0,
-            )
-            emblem_y = st.number_input(
-                "Emblem Y (mm)",
-                value=float(defaults_emblem.get("y", 0.0)),
-                min_value=-200.0,
-                max_value=200.0,
-            )
-            emblem_rot = st.number_input(
-                "Emblem rotation (deg)",
-                value=float(defaults_emblem.get("rot", 0.0)),
-                min_value=-180.0,
-                max_value=180.0,
-            )
-            emblem_mode = st.selectbox(
-                "Emblem mode",
-                ["Emboss", "Engrave"],
-                index=0 if int(defaults_emblem.get("mode", 1)) == 1 else 1,
-            )
-
+            snap_opts = ["custom", "center", "left", "right", "above_text", "below_text",
+                         "top_left", "top_right", "bottom_left", "bottom_right"]
+            emblem_snap = st.selectbox("Emblem snap", snap_opts,
+                                       index=snap_opts.index(de.get("snap", "custom")) if de.get("snap") in snap_opts else 0)
+            emblem_autocenter = st.checkbox("Auto-center", value=bool(de.get("autocenter", 1)))
+            emblem_scale = st.number_input("Emblem scale", value=float(de.get("scale", 0.25)), min_value=0.05, max_value=5.0)
+            emblem_depth = st.number_input("Emblem depth (mm)", value=float(de.get("depth", 1.2)), min_value=0.2, max_value=10.0)
+            emblem_x = st.number_input("Emblem X (mm)", value=float(de.get("x", 0.0)), min_value=-200.0, max_value=200.0)
+            emblem_y = st.number_input("Emblem Y (mm)", value=float(de.get("y", 0.0)), min_value=-200.0, max_value=200.0)
+            emblem_rot = st.number_input("Emblem rotation (°)", value=float(de.get("rot", 0.0)), min_value=-180.0, max_value=180.0)
+            emblem_mode = 1 if st.selectbox("Emblem mode", ["Emboss", "Engrave"], index=0 if int(de.get("mode", 1)) == 1 else 1) == "Emboss" else 0
             emblem_spec = EmblemSpec(
-                enabled=True,
-                snap=emblem_snap,
-                autocenter=1 if emblem_autocenter else 0,
-                scale=emblem_scale,
-                depth=emblem_depth,
-                x=emblem_x,
-                y=emblem_y,
-                rot=emblem_rot,
-                mode=1 if emblem_mode == "Emboss" else 0,
+                enabled=True, snap=emblem_snap, autocenter=1 if emblem_autocenter else 0,
+                scale=emblem_scale, depth=emblem_depth, x=emblem_x, y=emblem_y, rot=emblem_rot, mode=emblem_mode,
             )
 
-        submit = st.form_submit_button("Create template")
+        submitted = st.form_submit_button("Create template")
 
-    if submit:
-        template_id = sanitize_template_id(template_id_raw)
-        if not template_id:
+    if submitted:
+        tid = sanitize_template_id(template_id_raw)
+        if not tid:
             st.error("Template ID cannot be empty.")
-            return
-        spec = TemplateSpec(
-            template_id=template_id,
-            label=label or template_id,
-            shape="rounded_rect" if shape_label == "Rounded Rectangle" else "circle",
-            width=width,
-            height=height,
-            diameter=diameter,
-            thickness=thickness,
-            radius=radius,
-            text=text_spec,
-            emblem=emblem_spec,
-        )
-        try:
-            final_id, out_dir = create_template(spec)
-            st.session_state.pop("builder_defaults", None)
-            st.success(f"Created template: custom/{final_id}")
-            st.caption(str(out_dir))
-            if hasattr(st, "rerun"):
+        else:
+            spec = TemplateSpec(
+                template_id=tid, label=label or tid,
+                shape="rounded_rect" if shape_label == "Rounded Rectangle" else "circle",
+                width=width, height=height, diameter=diameter, thickness=thickness, radius=radius,
+                text=text_spec, emblem=emblem_spec,
+            )
+            try:
+                final_id, out_dir = create_template(spec)
+                st.session_state.pop("builder_defaults", None)
+                st.success(f"Template created: custom/{final_id}")
                 st.rerun()
-            else:
-                st.experimental_rerun()
-        except FileExistsError:
-            st.error(f"Template ID already exists: {template_id}")
-
-st.set_page_config(page_title="PromptToSTL", layout="wide")
-st.title("PromptToSTL (Local GUI)")
-
-if "preview_nonce" not in st.session_state:
-    st.session_state["preview_nonce"] = 0
-if "pending_build" not in st.session_state:
-    st.session_state["pending_build"] = False
-if "last_build_id" not in st.session_state:
-    st.session_state["last_build_id"] = 0
-
-with st.sidebar:
-    st.header("App Mode")
-    app_mode_label = st.radio("Mode", ["Build Template", "Create Template"], horizontal=True)
-    app_mode = MODE_BUILD_TEMPLATE if app_mode_label == "Build Template" else MODE_CREATE_TEMPLATE
-
-    if app_mode == MODE_BUILD_TEMPLATE:
-        st.header("Engine")
-        openscad_exe = st.text_input("OpenSCAD executable", value=DEFAULT_OPENSCAD)
-        build_mode = st.radio("Mode", ["Manual", "Describe it"], horizontal=True)
-
-if app_mode == MODE_CREATE_TEMPLATE:
-    render_template_builder()
+            except FileExistsError:
+                st.error(f"Template ID already exists: {tid}")
     st.stop()
 
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# BUILD MODE
+# ═══════════════════════════════════════════════════════════════════════════════
 templates = list_templates()
 if not templates:
-    st.error("No templates found. Add templates/<id>/schema.json and model.scad")
+    st.error("No templates found. Add templates/<id>/schema.json and model.scad.")
     st.stop()
 
 colL, colR = st.columns([1, 1], gap="large")
-uploaded_svg = None
+emblem_asset = emblem_asset_info = litho_asset = None
 
 with colL:
+    # ── Describe it mode ──────────────────────────────────────────────────────
     if build_mode == "Describe it":
         st.subheader("Describe it")
-        description = st.text_area("Describe your object", height=120)
-        if st.button("Generate Proposal"):
-            template_map = {}
-            for tid in templates:
-                schema, _ = load_template(tid)
-                template_map[tid] = schema
-            proposal = route_intent(description, template_map)
-            st.session_state["intent_proposal"] = proposal
-            if hasattr(st, "rerun"):
+        description = st.text_area("Describe what you want to make", height=100)
+
+        col_gen, col_regen = st.columns(2)
+        with col_gen:
+            if st.button("Generate proposal", type="primary"):
+                template_map = {tid: load_template(tid)[0] for tid in templates}
+                proposal = route_intent(description, template_map)
+                st.session_state["intent_proposal"] = proposal
                 st.rerun()
-            else:
-                st.experimental_rerun()
+        with col_regen:
+            if st.button("Regenerate") and st.session_state.get("intent_proposal"):
+                template_map = {tid: load_template(tid)[0] for tid in templates}
+                st.session_state["intent_proposal"] = route_intent(description, template_map)
+                st.rerun()
 
         proposal = st.session_state.get("intent_proposal")
         if proposal:
-            proposal_template = proposal.get("template_id", "")
-            proposal_schema, _ = load_template(proposal_template) if proposal_template in templates else (None, None)
-            if proposal_schema:
-                st.write(f"Template: {proposal_schema.get('label', proposal_template)}")
-            else:
-                st.write(f"Template: {proposal_template}")
+            ptid = proposal.get("template_id", "")
+            pschema, _ = load_template(ptid) if ptid in templates else (None, None)
+            label_str = pschema.get("label", ptid) if pschema else ptid
+            st.write(f"**Template:** {label_str}")
             st.json(proposal.get("params", {}))
-            notes = proposal.get("notes", "")
-            if notes:
-                st.info(notes)
+            if proposal.get("notes"):
+                st.info(proposal["notes"])
+            if st.button("Apply to form"):
+                st.session_state.update(
+                    intent_template_id=proposal.get("template_id"),
+                    intent_params=proposal.get("params", {}),
+                    template_select=proposal.get("template_id"),
+                    pending_build=True,
+                )
+                st.rerun()
 
-            if st.button("Apply to Form"):
-                st.session_state["intent_template_id"] = proposal.get("template_id")
-                st.session_state["intent_params"] = proposal.get("params", {})
-                st.session_state["template_select"] = proposal.get("template_id")
-                st.session_state["pending_build"] = True
-                if hasattr(st, "rerun"):
-                    st.rerun()
-                else:
-                    st.experimental_rerun()
-            if st.button("Regenerate"):
-                template_map = {}
-                for tid in templates:
-                    schema, _ = load_template(tid)
-                    template_map[tid] = schema
-                proposal = route_intent(description, template_map)
-                st.session_state["intent_proposal"] = proposal
-                if hasattr(st, "rerun"):
-                    st.rerun()
-                else:
-                    st.experimental_rerun()
-
+    # ── Template selector ────────────────────────────────────────────────────
     st.subheader("Template")
-    intent_template_id = st.session_state.get("intent_template_id")
-    if "template_select" not in st.session_state and intent_template_id in templates:
-        st.session_state["template_select"] = intent_template_id
+    intent_tid = st.session_state.get("intent_template_id")
+    if "template_select" not in st.session_state and intent_tid in templates:
+        st.session_state["template_select"] = intent_tid
+
     template_id = st.selectbox("Choose template", templates, key="template_select")
     schema, scad_path = load_template(template_id)
-
     st.caption(schema.get("label", template_id))
 
-    st.subheader("Parameters")
-    params = {}
-    intent_params = st.session_state.get("intent_params") if intent_template_id == template_id else None
-    for k, spec in schema["params"].items():
-        t = spec["type"]
-        default = spec.get("default")
-        if intent_params and k in intent_params:
-            default = intent_params.get(k)
+    is_lithophane = schema.get("lithophane_mode", False)
+    is_multicolor = schema.get("multicolor_mode", False)
 
-        if t == "string":
-            if template_id == "nameplate" and k == "text_align":
-                params[k] = st.selectbox(
-                    k,
-                    ["left", "center", "right"],
-                    index=["left", "center", "right"].index(str(default)) if default in {"left", "center", "right"} else 1,
-                )
-            elif template_id == "nameplate" and k == "text_anchor_y":
-                params[k] = st.selectbox(
-                    k,
-                    ["top", "center", "bottom"],
-                    index=["top", "center", "bottom"].index(str(default)) if default in {"top", "center", "bottom"} else 1,
-                )
-            elif isinstance(spec.get("options"), list) and spec.get("options"):
-                options = [str(opt) for opt in spec["options"]]
-                default_value = str(default) if default is not None else options[0]
-                index = options.index(default_value) if default_value in options else 0
-                params[k] = st.selectbox(k, options, index=index)
-            else:
-                params[k] = st.text_input(k, value=str(default) if default is not None else "")
-        elif t in {"int", "integer"}:
-            params[k] = st.number_input(k, value=int(default), step=1,
-                                        min_value=int(spec.get("min", -10**9)),
-                                        max_value=int(spec.get("max", 10**9)))
-        elif t == "number":
-            params[k] = st.number_input(k, value=float(default),
-                                        min_value=float(spec.get("min", -1e9)),
-                                        max_value=float(spec.get("max", 1e9)))
-        else:
-            st.warning(f"Unknown type {t} for {k}")
+    # ── Lithophane image upload ───────────────────────────────────────────────
+    if is_lithophane:
+        intent_params_raw = st.session_state.get("intent_params") if intent_tid == template_id else None
+        params = render_params(schema, template_id, intent_params_raw)
+        params, litho_asset = render_lithophane_section(params)
 
-    if "emblem_enabled" in schema.get("params", {}):
-        st.subheader("Emblem")
-        uploaded_svg = st.file_uploader("SVG emblem", type=["svg"])
-        if template_id == "cuban_link_chain" and uploaded_svg is not None:
-            if int(params.get("emblem_auto_fit", 0)) == 1:
-                svg_size = svg_size_from_bytes(uploaded_svg.getvalue())
-                if svg_size:
-                    scale = float(params.get("emblem_scale", 1.0))
-                    pad_x = float(params.get("pad_x", 0))
-                    pad_y = float(params.get("pad_y", 0))
-                    req_w = svg_size[0] * scale + 2 * pad_x
-                    req_h = svg_size[1] * scale + 2 * pad_y
-                    params["plate_w"] = max(float(params.get("plate_w", 0)), req_w)
-                    params["plate_h"] = max(float(params.get("plate_h", 0)), req_h)
+    else:
+        # ── Regular template parameters ───────────────────────────────────────
+        st.subheader("Parameters")
+        intent_params_raw = st.session_state.get("intent_params") if intent_tid == template_id else None
+        params = render_params(schema, template_id, intent_params_raw)
+        params = apply_text_layout(schema, template_id, params)
 
-    layout_debug = None
-    text_box = schema.get("text_box") or {}
-    if text_box and "text_size" in params:
-        max_text_size = float(params.get("text_size", 0))
-        min_text_size = float(schema["params"].get("text_size", {}).get("min", max_text_size))
-        max_lines = int(schema.get("max_lines", 1))
-        box_w = eval_expr(text_box.get("box_w", 0), params)
-        box_h = eval_expr(text_box.get("box_h", 0), params)
-        offset_x = eval_expr(text_box.get("offset_x", 0), params)
-        offset_y = eval_expr(text_box.get("offset_y", 0), params)
+        # ── Emblem section ────────────────────────────────────────────────────
+        if "emblem_enabled" in schema.get("params", {}):
+            st.subheader("Emblem")
+            params, emblem_asset, emblem_asset_info = render_emblem_section(schema, template_id, params)
 
-        params["offset_x"] = offset_x
-        params["offset_y"] = offset_y
-        if "text_box_w" not in params:
-            params["text_box_w"] = box_w
-        if "text_box_h" not in params:
-            params["text_box_h"] = box_h
-        if "text_box_offset_x" not in params:
-            params["text_box_offset_x"] = offset_x
-        if "text_box_offset_y" not in params:
-            params["text_box_offset_y"] = offset_y
-
-        if template_id == "nameplate":
-            layout_debug = {
-                "lines": [params.get("line1", ""), params.get("line2", ""), params.get("line3", "")],
-                "text_size": params.get("text_size"),
-                "offsets_y": [],
-                "warning": "",
-                "truncated": False,
+        # Emblem snap position calculation
+        emblem_snap = params.get("emblem_snap") if isinstance(params.get("emblem_snap"), str) else None
+        if emblem_snap and emblem_snap != "custom":
+            box_w = float(params.get("text_box_w", 0.0))
+            box_h = float(params.get("text_box_h", 0.0))
+            box_off_x = float(params.get("text_box_offset_x", 0.0))
+            box_off_y = float(params.get("text_box_offset_y", 0.0))
+            m = min(box_w, box_h) * 0.1 if min(box_w, box_h) > 0 else 0.0
+            snap_map = {
+                "center": (0.0, 0.0), "left": (-box_w/2+m, 0.0), "right": (box_w/2-m, 0.0),
+                "above_text": (0.0, box_h/2-m), "below_text": (0.0, -box_h/2+m),
+                "top_left": (-box_w/2+m, box_h/2-m), "top_right": (box_w/2-m, box_h/2-m),
+                "bottom_left": (-box_w/2+m, -box_h/2+m), "bottom_right": (box_w/2-m, -box_h/2+m),
             }
-        else:
-            raw_lines = []
-            for key in ("line1", "line2", "line3"):
-                if key in params:
-                    raw_lines.append(str(params.get(key, "")))
-            if not raw_lines and "text" in params:
-                raw_lines = [str(params.get("text", ""))]
+            sx, sy = snap_map.get(emblem_snap, (0.0, 0.0))
+            params["emblem_x"] = sx + box_off_x
+            params["emblem_y"] = sy + box_off_y
 
-            line_gap = float(params.get("line_gap", 0))
-            if int(params.get("plate_auto_fit", 0)) == 1 and "plate_w" in params and "plate_h" in params:
-                try:
-                    fit_layout = layout_text(
-                        raw_lines,
-                        max_lines=max_lines,
-                        box_w_mm=1e6,
-                        box_h_mm=1e6,
-                        max_text_size=max_text_size,
-                        min_text_size=max_text_size,
-                        margin=1.0,
-                        line_gap_mm=line_gap,
-                    )
-                    fit_lines = fit_layout.get("lines", [])
-                    fit_widths = fit_layout.get("line_widths", [])
-                    pad_x = float(params.get("pad_x", 0))
-                    pad_y = float(params.get("pad_y", 0))
-                    if fit_widths:
-                        required_w = max(fit_widths) / TEXT_MARGIN + 2 * pad_x
-                        required_h = (
-                            max_text_size + max(0, len(fit_lines) - 1) * line_gap
-                        ) / TEXT_MARGIN + 2 * pad_y
-                        params["plate_w"] = max(float(params.get("plate_w", 0)), required_w)
-                        params["plate_h"] = max(float(params.get("plate_h", 0)), required_h)
-                        box_w = eval_expr(text_box.get("box_w", 0), params)
-                        box_h = eval_expr(text_box.get("box_h", 0), params)
-                except Exception:
-                    pass
+    # ── Multicolor info ───────────────────────────────────────────────────────
+    if is_multicolor:
+        base_thick = float(params.get("base_thick", 2.0))
+        st.info(f"**2-Color Print:** Change filament at **{base_thick:.1f} mm** layer height.\n\n"
+                f"Color A = base plate · Color B = raised text/emblem")
 
-            layout = layout_text(
-                raw_lines,
-                max_lines=max_lines,
-                box_w_mm=box_w,
-                box_h_mm=box_h,
-                max_text_size=max_text_size,
-                min_text_size=min_text_size,
-                margin=TEXT_MARGIN,
-                line_gap_mm=line_gap,
-            )
-            layout_debug = layout
+    # ── Print note ────────────────────────────────────────────────────────────
+    print_note = schema.get("print_note", "")
+    if print_note and not is_multicolor:
+        st.info(print_note.format(**params))
 
-            params["text_size"] = layout["text_size"]
-            if "line_gap" in params and "line_gap_mm" in layout:
-                params["line_gap"] = layout["line_gap_mm"]
-
-            lines = layout["lines"] + ["", "", ""]
-            if "line1" in params:
-                params["line1"] = lines[0]
-            if "line2" in params:
-                params["line2"] = lines[1]
-            if "line3" in params:
-                params["line3"] = lines[2]
-
-            if layout.get("warning"):
-                st.warning(layout["warning"])
-            elif layout.get("truncated"):
-                st.warning("Text was truncated to fit the text box.")
-
-    emblem_snap = params.get("emblem_snap") if isinstance(params.get("emblem_snap"), str) else None
-    if emblem_snap and emblem_snap != "custom":
-        box_w = float(params.get("text_box_w", 0.0))
-        box_h = float(params.get("text_box_h", 0.0))
-        box_off_x = float(params.get("text_box_offset_x", 0.0))
-        box_off_y = float(params.get("text_box_offset_y", 0.0))
-        margin = min(box_w, box_h) * 0.1 if min(box_w, box_h) > 0 else 0.0
-
-        def snap_pos(kind):
-            if kind == "center":
-                return 0.0, 0.0
-            if kind == "left":
-                return -box_w / 2 + margin, 0.0
-            if kind == "right":
-                return box_w / 2 - margin, 0.0
-            if kind == "above_text":
-                return 0.0, box_h / 2 - margin
-            if kind == "below_text":
-                return 0.0, -box_h / 2 + margin
-            if kind == "top_left":
-                return -box_w / 2 + margin, box_h / 2 - margin
-            if kind == "top_right":
-                return box_w / 2 - margin, box_h / 2 - margin
-            if kind == "bottom_left":
-                return -box_w / 2 + margin, -box_h / 2 + margin
-            if kind == "bottom_right":
-                return box_w / 2 - margin, -box_h / 2 + margin
-            return 0.0, 0.0
-
-        snap_x, snap_y = snap_pos(emblem_snap)
-        autocenter = int(params.get("emblem_autocenter", 1)) == 1
-        if emblem_snap == "center" and autocenter:
-            snap_x, snap_y = 0.0, 0.0
-        params["emblem_x"] = snap_x + box_off_x
-        params["emblem_y"] = snap_y + box_off_y
-
-    with st.expander("Layout Debug", expanded=False):
-        if layout_debug:
-            st.write(f"box_w: {box_w}")
-            st.write(f"box_h: {box_h}")
-            st.write(f"offset_x: {offset_x}")
-            st.write(f"offset_y: {offset_y}")
-            st.write(f"text_size: {layout_debug.get('text_size')}")
-            st.write(f"lines: {layout_debug.get('lines')}")
-            st.write(f"offsets_y: {layout_debug.get('offsets_y')}")
-            st.write(f"warning: {layout_debug.get('warning')}")
-            st.write(f"truncated: {layout_debug.get('truncated')}")
-        else:
-            st.write("No layout data for this template.")
-
+    # ── Build ─────────────────────────────────────────────────────────────────
     st.subheader("Build")
-    job_name = st.text_input("Output name", value=f"{template_id}_{uuid.uuid4().hex[:8]}")
+    job_name = st.text_input("Output name", value=f"{template_id.replace('/', '_')}_{uuid.uuid4().hex[:8]}")
     build = st.button("Build STL", type="primary")
     if build:
         st.session_state["build_requested"] = True
 
 with colR:
-    st.subheader("3D Preview")
+    render_preview_panel(st.session_state["last_build_id"])
 
-    use_placeholder = st.checkbox("Use placeholder")
-    open_external = st.checkbox("Open in external viewer")
 
-    st.caption("Load STL")
-    stl_files = [p for p in OUT_DIR.rglob("*.stl") if p.resolve() != PLACEHOLDER_STL]
-    stl_files = sorted(stl_files, key=lambda p: p.stat().st_mtime, reverse=True)
-    stl_labels = {}
-    for p in stl_files:
-        rel = p.relative_to(OUT_DIR)
-        job = rel.parts[0] if rel.parts else ""
-        mtime_str = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(p.stat().st_mtime))
-        label = f"{job}/{p.name} ({mtime_str})"
-        stl_labels[label] = p
-
-    if stl_labels:
-        selected_label = st.selectbox("Select STL", list(stl_labels.keys()))
-        if st.button("Load selected"):
-            st.session_state["last_stl_path"] = str(stl_labels[selected_label])
-            st.session_state["preview_nonce"] += 1
-    else:
-        st.info("No STL files found in /out.")
-
-    if st.button("Refresh preview"):
-        st.session_state["preview_nonce"] += 1
-
-    last = st.session_state.get("last_stl_path")
-    preview_path = Path(last) if last else None
-    if use_placeholder:
-        preview_path = PLACEHOLDER_STL
-
-    resolved_path = preview_path.resolve() if preview_path else None
-    exists = resolved_path.exists() if resolved_path else False
-    size = resolved_path.stat().st_size if exists else 0
-
-    st.caption("Preview diagnostics")
-    st.write(f"Exists: {exists}")
-    st.write(f"Size: {size} bytes")
-    if resolved_path:
-        st.write(f"Path: {resolved_path}")
-    else:
-        st.write("Path: (none)")
-
-    if resolved_path and exists:
-        try:
-            with resolved_path.open("r", encoding="utf-8", errors="replace") as f:
-                lines = []
-                for _ in range(5):
-                    line = f.readline()
-                    if not line:
-                        break
-                    lines.append(line.rstrip("\n"))
-            st.code("\n".join(lines) if lines else "(file is empty)", language="text")
-        except Exception as e:
-            st.warning(f"Could not read preview lines: {e}")
-    else:
-        st.code("(no file to read)", language="text")
-
-    if open_external:
-        if resolved_path:
-            st.write(f"Full path: {resolved_path}")
-            if st.button("Open output folder"):
-                subprocess.run(["open", str(resolved_path.parent)])
-        else:
-            st.info("No preview path available.")
-
-    if resolved_path and exists and size > 0:
-        try:
-            stl_from_file(
-                str(resolved_path),
-                height=500,
-                key=f"stl_preview_{st.session_state['last_build_id']}",
-            )
-        except Exception as e:
-            st.error(f"streamlit_stl failed: {e}")
-            try:
-                mesh = trimesh.load_mesh(resolved_path, force="mesh")
-                st.write(f"Bounds: {mesh.bounds.tolist()}")
-                st.write(f"Extents: {mesh.extents.tolist()}")
-            except Exception as mesh_err:
-                st.warning(f"trimesh failed: {mesh_err}")
-            if pv is None:
-                st.warning("PyVista is not available for fallback rendering.")
-            else:
-                try:
-                    pv_mesh = pv.read(str(resolved_path))
-                    plotter = pv.Plotter(off_screen=True)
-                    plotter.add_mesh(pv_mesh, color="#d0d0d0")
-                    plotter.view_isometric()
-                    img = plotter.screenshot(None, return_img=True, window_size=(800, 600))
-                    plotter.close()
-                    if img is not None:
-                        st.image(img, caption="Fallback preview (PyVista)")
-                    else:
-                        st.warning("PyVista did not return an image.")
-                except Exception as pv_err:
-                    st.warning(f"PyVista failed: {pv_err}")
-    else:
-        st.info("No STL built yet. Click Build STL.")
-    
-st.subheader("Output")
-build_requested = st.session_state.pop("build_requested", False) or st.session_state.get("pending_build", False)
+# ═══════════════════════════════════════════════════════════════════════════════
+# BUILD EXECUTION
+# ═══════════════════════════════════════════════════════════════════════════════
+build_requested = st.session_state.pop("build_requested", False) or st.session_state.pop("pending_build", False)
 if build_requested:
-    st.session_state["pending_build"] = False
     job_dir = OUT_DIR / job_name
     job_dir.mkdir(parents=True, exist_ok=True)
 
-    spec_path = job_dir / "spec.json"
     stamp = int(time.time() * 1000)
     stl_path = job_dir / f"model_{stamp}.stl"
     log_path = job_dir / "logs.txt"
 
-    if "emblem_enabled" in schema.get("params", {}) and uploaded_svg is not None:
-        emblem_path = job_dir / "emblem.svg"
-        emblem_path.write_bytes(uploaded_svg.getvalue())
-        params["emblem_enabled"] = 1
-        params["emblem_path"] = str(emblem_path.resolve())
+    # Handle emblem asset
+    if "emblem_enabled" in schema.get("params", {}) and emblem_asset is not None:
+        if emblem_asset.get("kind") == "svg":
+            ep = job_dir / "emblem.svg"
+            ep.write_bytes(emblem_asset["bytes"])
+            params.update(emblem_kind="svg", emblem_enabled=1, emblem_path=str(ep.resolve()))
+        elif emblem_asset.get("kind") == "heightmap":
+            ep = job_dir / "emblem.dat"
+            size = save_image_as_dat(
+                emblem_asset["bytes"], ep,
+                max_size=int(emblem_asset.get("max_size", 256)),
+                invert=bool(emblem_asset.get("invert", False)),
+            )
+            if size is None:
+                st.error("Failed to process image emblem. Check Pillow is installed.")
+                st.stop()
+            params.update(emblem_kind="heightmap", emblem_enabled=1, emblem_path=str(ep.resolve()))
 
-    spec_path.write_text(json.dumps(
-        {"template_id": template_id, "params": params},
-        indent=2
-    ))
+    # Handle lithophane image asset
+    if is_lithophane and litho_asset is not None:
+        lp = job_dir / "image.dat"
+        size = save_image_as_dat(
+            litho_asset["bytes"], lp,
+            max_size=int(litho_asset.get("max_size", 192)),
+            invert=bool(litho_asset.get("invert", False)),
+        )
+        if size is None:
+            st.error("Failed to process lithophane image. Check Pillow is installed.")
+            st.stop()
+        w, h = size
+        params.update(dat_file=str(lp.resolve()), dat_w=w, dat_h=h)
+
+    # Save spec
+    (job_dir / "spec.json").write_text(
+        json.dumps({"template_id": template_id, "params": params}, indent=2)
+    )
 
     try:
-        logs = run_openscad(openscad_exe, scad_path, stl_path, params)
-        st.session_state["last_stl_path"] = str(stl_path)
-        st.session_state["last_build_id"] += 1
-        st.session_state["preview_nonce"] += 1
-        log_path.write_text(logs)
+        st.subheader("Output")
+        with st.spinner("Running OpenSCAD…"):
+            logs = run_openscad(openscad_exe, scad_path, stl_path, params)
 
+        log_path.write_text(logs)
         report = validate_stl(stl_path)
         (job_dir / "report.json").write_text(json.dumps(report, indent=2))
 
-        st.success("Build completed")
-        st.code(logs[-2000:] if len(logs) > 2000 else logs)
+        st.session_state.update(
+            last_stl_path=str(stl_path),
+            last_build_id=st.session_state["last_build_id"] + 1,
+            preview_nonce=st.session_state["preview_nonce"] + 1,
+        )
 
+        st.success("Build complete!")
 
-        st.write("Validation report:")
-        st.json(report)
+        with st.expander("Build log"):
+            st.code(logs[-3000:] if len(logs) > 3000 else logs)
+        with st.expander("Validation report"):
+            st.json(report)
 
-        last_path = st.session_state.get("last_stl_path")
-        if last_path:
-            last_file = Path(last_path)
-            if last_file.exists():
-                st.download_button(
-                    "Download STL",
-                    data=last_file.read_bytes(),
-                    file_name=last_file.name,
-                    mime="application/sla",
-                )
+        last_file = Path(st.session_state["last_stl_path"])
+        if last_file.exists():
+            st.download_button(
+                "Download STL",
+                data=last_file.read_bytes(),
+                file_name=last_file.name,
+                mime="application/sla",
+            )
 
-        if hasattr(st, "rerun"):
-            st.rerun()
-        else:
-            st.experimental_rerun()
+        st.rerun()
 
     except Exception as e:
         st.error(str(e))
         if log_path.exists():
-            st.caption("Last logs:")
-            st.code(log_path.read_text()[-2000:])
-
+            with st.expander("Error log"):
+                st.code(log_path.read_text()[-3000:])
 else:
-    st.info("Click Build STL to generate output into /out/<job>/")
+    if build_requested is False:
+        st.info("Configure your template on the left, then click **Build STL**.")

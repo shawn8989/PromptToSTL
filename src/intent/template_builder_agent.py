@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 from typing import Any, Dict
 
-from langchain_openai import ChatOpenAI
+import anthropic
 
 
 def _parse_json(text: str) -> Dict[str, Any]:
@@ -37,14 +38,12 @@ def propose_template_spec(description: str) -> Dict[str, Any]:
         "Use reasonable defaults when uncertain. Do not include any other keys."
     )
 
-    user_prompt = {"description": description}
-
-    model = ChatOpenAI(model="gpt-4o-mini", temperature=0.2)
-    response = model.invoke(
-        [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": json.dumps(user_prompt)},
-        ]
+    client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
+    response = client.messages.create(
+        model="claude-haiku-4-5-20251001",
+        max_tokens=1024,
+        system=system_prompt,
+        messages=[{"role": "user", "content": json.dumps({"description": description})}],
     )
 
-    return _parse_json(response.content or "")
+    return _parse_json(response.content[0].text if response.content else "")

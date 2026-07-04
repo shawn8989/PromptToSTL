@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 from typing import Any, Dict
 
-from langchain_openai import ChatOpenAI
+import anthropic
 
 
 def _coerce_value(value: Any, spec: Dict[str, Any]) -> Any:
@@ -93,14 +94,14 @@ def route_intent(description: str, templates: Dict[str, Dict[str, Any]]) -> Dict
         "templates": template_list,
     }
 
-    model = ChatOpenAI(model="gpt-4o-mini", temperature=0)
-    response = model.invoke(
-        [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": json.dumps(user_prompt)},
-        ]
+    client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
+    response = client.messages.create(
+        model="claude-haiku-4-5-20251001",
+        max_tokens=1024,
+        system=system_prompt,
+        messages=[{"role": "user", "content": json.dumps(user_prompt)}],
     )
-    data = _parse_json(response.content or "")
+    data = _parse_json(response.content[0].text if response.content else "")
 
     template_id = data.get("template_id")
     if template_id not in templates:
