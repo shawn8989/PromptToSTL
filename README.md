@@ -29,10 +29,14 @@ pip install -r requirements.txt
 ```
 
 ### Optional: AI Prompt Routing
-Create a `.env` file with your API key to enable the "Describe it" mode:
+The app runs fully without any API key — every template can be built and
+exported manually. To additionally enable the AI "Describe it" and
+template-proposal modes, create a `.env` file with an Anthropic key:
 ```bash
-OPENAI_API_KEY=your_key_here
+ANTHROPIC_API_KEY=your_key_here
 ```
+Without a key the AI features simply show a note and fall back to manual
+editing; nothing else is affected.
 
 ### Run
 ```bash
@@ -40,10 +44,24 @@ streamlit run app.py
 ```
 Open http://localhost:8501 in your browser.
 
+### Tests
+```bash
+pip install -r requirements-dev.txt
+pytest
+```
+The suite validates every template schema and builds each template through
+OpenSCAD to confirm it produces a watertight STL. Build tests auto-skip if
+OpenSCAD is not installed.
+
 ## Current Templates
 - Keychain (rounded rectangle)
 - Coaster (round)
 - Nameplate (multiline text layout)
+- Plaque
+- Badge (round)
+- Multicolor badge
+- Cuban link chain
+- Lithophane (photo → heightmap plate)
 
 ## How It Works
 1. A template schema defines parameters and constraints.
@@ -55,25 +73,31 @@ Open http://localhost:8501 in your browser.
 - Python (Streamlit, trimesh)
 - OpenSCAD CLI
 - Streamlit-STL for live rendering
-- LangChain + OpenAI (optional prompt routing)
+- Anthropic Claude (optional prompt routing / template proposals)
 
 ## Project Structure
 ```plaintext
-app.py              # Streamlit UI
-src/                # Core logic (routing, layout, validation)
+app.py              # Streamlit entry point
+src/core/           # Geometry pipeline (catalog, runner, validate, layout)
+src/intent/         # Optional AI routing + template proposals (Claude)
+src/ui/             # Streamlit panels (params, preview, emblem, lithophane)
 templates/          # OpenSCAD templates + JSON schemas
+tests/              # Schema + headless build smoke tests
 assets/             # Screenshots and diagrams for README
 out/                # Generated builds (gitignored)
 ```
 
 ## Notes
 - Geometry is always produced by OpenSCAD for deterministic, printable output.
-- The "Describe it" mode uses OpenAI via LangChain; manual mode works offline.
+- The "Describe it" mode uses Anthropic Claude; manual mode works fully offline.
+- The Cuban link chain uses BOSL2 bezier sweeps and renders much faster on
+  OpenSCAD 2024+ (Manifold backend) than on the legacy 2021.01 CGAL backend.
 
 ## Roadmap (Short)
-- More templates (plaques, badges)
+- More templates (gridfinity bins, cookie cutters, QR plaques, tags)
+- Conversational parameter refinement ("make it 20% wider")
+- Self-healing AI template builder (render-check-retry loop)
 - Better layout constraints and text overflow handling
-- SVG logo overlays and embossing improvements
 
 ## License
 MIT
