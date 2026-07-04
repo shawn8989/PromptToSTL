@@ -12,7 +12,7 @@
   "params": {
     "line1": {
       "type": "string",
-      "default": "EDGE TECH"
+      "default": "SO Techy"
     },
     "line2": {
       "type": "string",

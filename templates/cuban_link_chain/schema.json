@@ -41,6 +41,13 @@
     "plate_offset_x": { "type": "number", "default": 0, "min": -200, "max": 200 },
     "plate_offset_y": { "type": "number", "default": 0, "min": -200, "max": 200 },
     "plate_auto_fit": { "type": "integer", "default": 0, "min": 0, "max": 1 },
+    "plate_shape_mode": {
+      "type": "string",
+      "default": "rect",
+      "options": ["rect", "text_outline"]
+    },
+    "plate_outline_pad": { "type": "number", "default": 4, "min": 0, "max": 30 },
+    "plate_outline_round": { "type": "number", "default": 2, "min": 0, "max": 20 },
 
     "bail_enabled": { "type": "integer", "default": 1, "min": 0, "max": 1 },
     "bail_auto": { "type": "integer", "default": 1, "min": 0, "max": 1 },
@@ -84,8 +91,15 @@
       ]
     },
     "emblem_autocenter": { "type": "integer", "default": 1, "min": 0, "max": 1 },
-    "emblem_enabled": { "type": "integer", "default": 0, "min": 0, "max": 1 },
-    "emblem_path": { "type": "string", "default": "" },
+    "emblem_enabled": { "type": "integer", "default": 0, "min": 0, "max": 1, "hidden": true },
+    "emblem_path": { "type": "string", "default": "", "hidden": true },
+    "emblem_kind": {
+      "type": "string",
+      "default": "svg",
+      "options": ["svg", "heightmap"],
+      "hidden": true
+    },
+    "emblem_invert": { "type": "integer", "default": 0, "min": 0, "max": 1, "hidden": true },
     "emblem_scale": { "type": "number", "default": 0.25, "min": 0.05, "max": 5 },
     "emblem_x": { "type": "number", "default": 0, "min": -100, "max": 100 },
     "emblem_y": { "type": "number", "default": 0, "min": -100, "max": 100 },

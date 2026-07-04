@@ -33,6 +33,9 @@ plate_radius = 4;
 plate_offset_x = 0;
 plate_offset_y = 0;
 plate_auto_fit = 0;
+plate_shape_mode = "rect"; // rect | text_outline
+plate_outline_pad = 4;
+plate_outline_round = 2;
 
 // Bail (connector)
 bail_enabled = 1;
@@ -68,6 +71,8 @@ emblem_rot = 0;
 emblem_mode = 1;
 emblem_depth = 1.2;
 emblem_auto_fit = 0;
+emblem_kind = "svg"; // svg | heightmap
+emblem_invert = 0;
 
 // Misc
 match_chain_thickness = 1;
@@ -181,11 +186,41 @@ module chain_body() {
   }
 }
 
+module line_text_2d(s, y) {
+  translate([offset_x, offset_y + y])
+    text(s, size=text_size, halign=text_align, valign="center");
+}
+
+module text_2d() {
+  if (plate_enabled == 1 && text_enabled == 1) {
+    if (line2 == "" && line3 == "") {
+      line_text_2d(line1, 0);
+    } else if (line3 == "") {
+      line_text_2d(line1, line_gap / 2);
+      line_text_2d(line2, -line_gap / 2);
+    } else {
+      line_text_2d(line1, line_gap);
+      line_text_2d(line2, 0);
+      line_text_2d(line3, -line_gap);
+    }
+  }
+}
+
+module plate_shape_2d() {
+  if (plate_shape_mode == "text_outline" && text_enabled == 1) {
+    offset(r=plate_outline_round)
+      offset(delta=plate_outline_pad)
+        text_2d();
+  } else {
+    rounded_rect_2d(plate_w, plate_h, plate_radius);
+  }
+}
+
 module plate_body() {
   if (plate_enabled == 1) {
     translate([plate_offset_x, plate_offset_y, 0])
       linear_extrude(height=plate_th_eff, center=true)
-        rounded_rect_2d(plate_w, plate_h, plate_radius);
+        plate_shape_2d();
   }
 }
 
@@ -199,24 +234,23 @@ module bail_body() {
   }
 }
 
-module line_text_3d(s, y) {
-  translate([plate_offset_x + offset_x, plate_offset_y + offset_y + y, 0])
-    linear_extrude(height=text_height)
-      text(s, size=text_size, halign=text_align, valign="center");
-}
-
 module text_union() {
   if (plate_enabled == 1 && text_enabled == 1) {
-    if (line2 == "" && line3 == "") {
-      line_text_3d(line1, 0);
-    } else if (line3 == "") {
-      line_text_3d(line1, line_gap / 2);
-      line_text_3d(line2, -line_gap / 2);
-    } else {
-      line_text_3d(line1, line_gap);
-      line_text_3d(line2, 0);
-      line_text_3d(line3, -line_gap);
-    }
+    translate([plate_offset_x, plate_offset_y, 0])
+      linear_extrude(height=text_height)
+        text_2d();
+  }
+}
+
+module emblem_shape() {
+  if (emblem_kind == "heightmap") {
+    scale([emblem_scale, emblem_scale, emblem_depth_eff / 2])
+      translate([0, 0, 1])
+        surface(file=emblem_path, center=true);
+  } else {
+    scale([emblem_scale, emblem_scale, 1])
+      linear_extrude(height=emblem_depth_eff)
+        import(emblem_path);
   }
 }
 
@@ -224,9 +258,7 @@ module emblem_3d(z) {
   if (plate_enabled == 1 && emblem_enabled == 1 && emblem_path != "") {
     translate([plate_offset_x + emblem_x, plate_offset_y + emblem_y, z])
       rotate([0, 0, emblem_rot])
-        scale([emblem_scale, emblem_scale, 1])
-          linear_extrude(height=emblem_depth_eff)
-            import(emblem_path);
+        emblem_shape();
   }
 }
 
