@@ -1,0 +1,63 @@
+{
+  "template_id": "lithophane_heart",
+  "label": "Lithophane — Heart",
+  "scad_file": "model.scad",
+  "accepts_image": true,
+  "params": {
+    "photo_path": {
+      "type": "string",
+      "default": "",
+      "hidden": true
+    },
+    "photo_cols": {
+      "type": "integer",
+      "default": 200,
+      "min": 50,
+      "max": 1024,
+      "hidden": true
+    },
+    "photo_rows": {
+      "type": "integer",
+      "default": 200,
+      "min": 50,
+      "max": 1024,
+      "hidden": true
+    },
+    "heart_w": {
+      "type": "number",
+      "default": 80,
+      "min": 30,
+      "max": 200
+    },
+    "heart_h": {
+      "type": "number",
+      "default": 80,
+      "min": 30,
+      "max": 200
+    },
+    "min_thickness": {
+      "type": "number",
+      "default": 0.8,
+      "min": 0.4,
+      "max": 1.5
+    },
+    "max_thickness": {
+      "type": "number",
+      "default": 3.0,
+      "min": 1.5,
+      "max": 5.0
+    },
+    "frame_width": {
+      "type": "number",
+      "default": 4,
+      "min": 1,
+      "max": 15
+    },
+    "base_height": {
+      "type": "number",
+      "default": 1.2,
+      "min": 0.4,
+      "max": 3.0
+    }
+  }
+}

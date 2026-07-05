@@ -1,0 +1,87 @@
+{
+  "template_id": "lithophane_mom",
+  "label": "Lithophane — MOM (heart centre)",
+  "scad_file": "model.scad",
+  "accepts_image": true,
+  "params": {
+    "photo_path": {
+      "type": "string",
+      "default": "",
+      "hidden": true
+    },
+    "photo_cols": {
+      "type": "integer",
+      "default": 200,
+      "min": 50,
+      "max": 1024,
+      "hidden": true
+    },
+    "photo_rows": {
+      "type": "integer",
+      "default": 200,
+      "min": 50,
+      "max": 1024,
+      "hidden": true
+    },
+    "heart_w": {
+      "type": "number",
+      "default": 38,
+      "min": 20,
+      "max": 80
+    },
+    "heart_h": {
+      "type": "number",
+      "default": 44,
+      "min": 20,
+      "max": 80
+    },
+    "letter_section_w": {
+      "type": "number",
+      "default": 28,
+      "min": 15,
+      "max": 60
+    },
+    "section_gap": {
+      "type": "number",
+      "default": 3,
+      "min": 1,
+      "max": 10
+    },
+    "letter_size": {
+      "type": "number",
+      "default": 26,
+      "min": 10,
+      "max": 60
+    },
+    "letter_height": {
+      "type": "number",
+      "default": 1.8,
+      "min": 0.6,
+      "max": 4.0
+    },
+    "min_thickness": {
+      "type": "number",
+      "default": 0.8,
+      "min": 0.4,
+      "max": 1.5
+    },
+    "max_thickness": {
+      "type": "number",
+      "default": 3.0,
+      "min": 1.5,
+      "max": 5.0
+    },
+    "frame_width": {
+      "type": "number",
+      "default": 3,
+      "min": 1,
+      "max": 10
+    },
+    "base_height": {
+      "type": "number",
+      "default": 1.2,
+      "min": 0.4,
+      "max": 3.0
+    }
+  }
+}

@@ -96,7 +96,18 @@ def route_intent(description: str, templates: Dict[str, Dict[str, Any]]) -> Dict
         "Output ONLY valid JSON with keys: template_id, params, notes. "
         "Do not invent personal data. Use only user-provided text. "
         "Only include params that exist in the chosen template schema. "
-        "Use defaults when missing. Keep numbers within min/max."
+        "Use defaults when missing. Keep numbers within min/max.\n\n"
+        "Photo-based (lithophane) templates — choose when the user mentions "
+        "a photo, picture, image, backlit print, or light-up display:\n"
+        "  lithophane_heart: heart-shaped photo lithophane.\n"
+        "  lithophane_circle: circular photo lithophane.\n"
+        "  lithophane_rectangle: rectangular photo lithophane.\n"
+        "  lithophane_mom: Mother's Day gift — M heart-lithophane M, "
+        "single piece; route here for 'mom', 'mother', 'Mother's Day' + photo.\n"
+        "  lithophane_dad: Father's Day gift — D heart-lithophane D, "
+        "single piece; route here for 'dad', 'father', 'Father's Day' + photo.\n"
+        "For any lithophane template, note in 'notes' that the user must "
+        "upload a photo before building."
     )
     user_prompt = {
         "description": description,
