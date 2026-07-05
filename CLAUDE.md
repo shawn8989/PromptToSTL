@@ -83,6 +83,10 @@ The `out/` directory is gitignored.
 
 `route_intent()` sends the user description + full template schemas to `gpt-4o-mini` and asks it to output `{template_id, params, notes}` JSON. The response is sanitized through `_sanitize_params()` which coerces types and clamps to `min`/`max` bounds. Adding a new template is sufficient for it to be available to the LLM automatically.
 
+### Lithophane Photo Controls
+
+Templates with `accepts_image: true` show a photo uploader plus preprocessing controls in `app.py`: a "Photo detail" slider (100–400 px, default 200) that caps the heightmap resolution passed to `prepare_lithophane_image(max_px=...)`, and brightness/contrast/gamma/invert sliders with a live original-vs-heightmap preview. Keep detail near 200 px — OpenSCAD's `surface()` render time grows roughly quadratically with resolution, and `run_openscad` aborts after 300 s. The hidden `photo_cols`/`photo_rows` params are set from the processed image's actual pixel dimensions at build time.
+
 ### Emblem / SVG Support
 
 Templates that support SVG emblems pass `emblem_enabled`, `emblem_path`, `emblem_scale`, `emblem_x`, `emblem_y`, `emblem_rot`, `emblem_mode`, and `emblem_depth` to OpenSCAD. The `emblem_snap` param (handled entirely in `app.py`) is a UI convenience that maps named positions (e.g. `"top_left"`, `"center"`) to absolute `emblem_x`/`emblem_y` coordinates before the build; it is not passed to OpenSCAD.

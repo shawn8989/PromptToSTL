@@ -20,7 +20,14 @@ def run_openscad(openscad_exe: str, scad_path: Path, out_stl: Path, params: dict
             cmd += ["-D", f"{k}={v}"]
     cmd.append(str(scad_path))
 
-    p = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+    try:
+        p = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
+    except subprocess.TimeoutExpired:
+        raise RuntimeError(
+            "OpenSCAD timed out after 300 seconds. "
+            "For lithophanes, lower the 'Photo detail' slider (200 px is a good "
+            "balance of sharpness and render time) and rebuild."
+        )
     logs = (p.stdout or "") + ("\n" + p.stderr if p.stderr else "")
     if p.returncode != 0:
         raise RuntimeError(f"OpenSCAD failed (code {p.returncode}).\n{logs}")

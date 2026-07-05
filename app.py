@@ -66,18 +66,23 @@ def eval_expr(value, params):
     except Exception:
         return 0.0
 
-st.set_page_config(page_title="PromptToSTL", layout="wide")
-st.title("PromptToSTL (Local GUI)")
+st.set_page_config(page_title="PromptToSTL", page_icon="🧱", layout="wide")
+st.title("PromptToSTL")
+st.caption("Turn templates and photos into 3D-printable STL files with OpenSCAD.")
 
 if "preview_nonce" not in st.session_state:
     st.session_state["preview_nonce"] = 0
 
+templates = list_templates()
+
 with st.sidebar:
-    st.header("Engine")
+    st.header("PromptToSTL")
+    st.caption("Parametric STL generator")
+    st.divider()
     openscad_exe = st.text_input("OpenSCAD executable", value=DEFAULT_OPENSCAD)
     mode = st.radio("Mode", ["Manual", "Describe it"], horizontal=True)
+    st.caption(f"{len(templates)} templates available")
 
-templates = list_templates()
 if not templates:
     st.error("No templates found. Add templates/<id>/schema.json and model.scad")
     st.stop()
@@ -142,37 +147,99 @@ with colL:
     st.subheader("Parameters")
     params = {}
     intent_params = st.session_state.get("intent_params") if intent_template_id == template_id else None
-    for k, spec in schema["params"].items():
-        if spec.get("hidden"):
-            continue
-        t = spec["type"]
+
+    def render_param(k, spec):
         default = spec.get("default")
         if intent_params and k in intent_params:
             default = intent_params.get(k)
-
+        t = spec["type"]
         if t == "string":
             options = spec.get("options")
             if options:
                 idx = options.index(str(default)) if default in options else 0
-                params[k] = st.selectbox(k, options, index=idx)
-            else:
-                params[k] = st.text_input(k, value=str(default) if default is not None else "")
-        elif t in {"int", "integer"}:
-            params[k] = st.number_input(k, value=int(default), step=1,
-                                        min_value=int(spec.get("min", -10**9)),
-                                        max_value=int(spec.get("max", 10**9)))
-        elif t == "number":
-            params[k] = st.number_input(k, value=float(default),
-                                        min_value=float(spec.get("min", -1e9)),
-                                        max_value=float(spec.get("max", 1e9)))
-        else:
-            st.warning(f"Unknown type {t} for {k}")
+                return st.selectbox(k, options, index=idx)
+            return st.text_input(k, value=str(default) if default is not None else "")
+        if t in {"int", "integer"}:
+            return st.number_input(k, value=int(default), step=1,
+                                   min_value=int(spec.get("min", -10**9)),
+                                   max_value=int(spec.get("max", 10**9)))
+        if t == "number":
+            return st.number_input(k, value=float(default),
+                                   min_value=float(spec.get("min", -1e9)),
+                                   max_value=float(spec.get("max", 1e9)))
+        st.warning(f"Unknown type {t} for {k}")
+        return default
 
+    ADVANCED_PREFIXES = ("text_box_", "text_margin_", "text_block_", "hole")
+    main_specs, emblem_specs, advanced_specs = [], [], []
+    for k, spec in schema["params"].items():
+        if spec.get("hidden"):
+            continue
+        if k.startswith("emblem_"):
+            emblem_specs.append((k, spec))
+        elif k.startswith(ADVANCED_PREFIXES) or k in {"debug", "holes"}:
+            advanced_specs.append((k, spec))
+        else:
+            main_specs.append((k, spec))
+
+    for k, spec in main_specs:
+        params[k] = render_param(k, spec)
+
+    if emblem_specs:
+        with st.expander("Emblem settings", expanded=False):
+            for k, spec in emblem_specs:
+                params[k] = render_param(k, spec)
+
+    if advanced_specs:
+        with st.expander("Advanced", expanded=False):
+            for k, spec in advanced_specs:
+                params[k] = render_param(k, spec)
+
+    photo_detail = 200
+    photo_brightness = 1.0
+    photo_contrast = 1.0
+    photo_gamma = 1.0
+    photo_invert = True
     if schema.get("accepts_image"):
         st.subheader("Photo")
         uploaded_photo = st.file_uploader(
             "Upload photo (JPG, PNG, HEIC)", type=["jpg", "jpeg", "png", "heic"]
         )
+        photo_detail = st.slider(
+            "Photo detail (px)", min_value=100, max_value=400, value=200, step=25,
+            help="Heightmap resolution. Higher = sharper lithophane but much "
+                 "slower OpenSCAD render. 200 px renders in seconds; 400 px can "
+                 "take minutes.",
+        )
+        pc1, pc2 = st.columns(2)
+        with pc1:
+            photo_brightness = st.slider("Brightness", 0.5, 2.0, 1.0, 0.05)
+            photo_contrast = st.slider("Contrast", 0.5, 2.0, 1.0, 0.05)
+        with pc2:
+            photo_gamma = st.slider("Gamma", 0.4, 2.5, 1.0, 0.05)
+            photo_invert = st.checkbox(
+                "Invert (backlit)", value=True,
+                help="Keep on for lithophanes: dark image areas become thick "
+                     "plastic so they look dark when backlit.",
+            )
+        if uploaded_photo is not None:
+            preview_dir = OUT_DIR / ".preview"
+            preview_dir.mkdir(parents=True, exist_ok=True)
+            preview_png = preview_dir / "photo_preview.png"
+            try:
+                prepare_lithophane_image(
+                    uploaded_photo.getvalue(), preview_png,
+                    max_px=photo_detail,
+                    brightness=photo_brightness,
+                    contrast=photo_contrast,
+                    gamma=photo_gamma,
+                    invert=photo_invert,
+                )
+                ic1, ic2 = st.columns(2)
+                ic1.image(uploaded_photo, caption="Original")
+                ic2.image(str(preview_png), caption="Heightmap (bright = thicker)")
+            except Exception as e:
+                st.warning(f"Could not preview photo: {e}")
     else:
         uploaded_photo = None
 
@@ -333,28 +400,28 @@ with colR:
     exists = resolved_path.exists() if resolved_path else False
     size = resolved_path.stat().st_size if exists else 0
 
-    st.caption("Preview diagnostics")
-    st.write(f"Exists: {exists}")
-    st.write(f"Size: {size} bytes")
-    if resolved_path:
-        st.write(f"Path: {resolved_path}")
-    else:
-        st.write("Path: (none)")
+    with st.expander("Diagnostics", expanded=False):
+        st.write(f"Exists: {exists}")
+        st.write(f"Size: {size} bytes")
+        if resolved_path:
+            st.write(f"Path: {resolved_path}")
+        else:
+            st.write("Path: (none)")
 
-    if resolved_path and exists:
-        try:
-            with resolved_path.open("r", encoding="utf-8", errors="replace") as f:
-                lines = []
-                for _ in range(5):
-                    line = f.readline()
-                    if not line:
-                        break
-                    lines.append(line.rstrip("\n"))
-            st.code("\n".join(lines) if lines else "(file is empty)", language="text")
-        except Exception as e:
-            st.warning(f"Could not read preview lines: {e}")
-    else:
-        st.code("(no file to read)", language="text")
+        if resolved_path and exists:
+            try:
+                with resolved_path.open("r", encoding="utf-8", errors="replace") as f:
+                    lines = []
+                    for _ in range(5):
+                        line = f.readline()
+                        if not line:
+                            break
+                        lines.append(line.rstrip("\n"))
+                st.code("\n".join(lines) if lines else "(file is empty)", language="text")
+            except Exception as e:
+                st.warning(f"Could not read preview lines: {e}")
+        else:
+            st.code("(no file to read)", language="text")
 
     if open_external:
         if resolved_path:
@@ -417,7 +484,12 @@ if st.session_state.pop("build_requested", False):
         else:
             photo_png_path = job_dir / "photo.png"
             photo_cols, photo_rows = prepare_lithophane_image(
-                uploaded_photo.getvalue(), photo_png_path
+                uploaded_photo.getvalue(), photo_png_path,
+                max_px=photo_detail,
+                brightness=photo_brightness,
+                contrast=photo_contrast,
+                gamma=photo_gamma,
+                invert=photo_invert,
             )
             params["photo_path"] = str(photo_png_path.resolve())
             params["photo_cols"] = photo_cols
@@ -436,27 +508,21 @@ if st.session_state.pop("build_requested", False):
         ))
 
         try:
-            logs = run_openscad(openscad_exe, scad_path, stl_path, params)
+            with st.status("Rendering with OpenSCAD…", expanded=False) as status:
+                logs = run_openscad(openscad_exe, scad_path, stl_path, params)
+                log_path.write_text(logs)
+                report = validate_stl(stl_path)
+                (job_dir / "report.json").write_text(json.dumps(report, indent=2))
+                status.update(label="Build complete", state="complete")
+
             st.session_state["last_stl_path"] = str(stl_path)
             st.session_state["preview_nonce"] += 1
-            log_path.write_text(logs)
-
-            report = validate_stl(stl_path)
-            (job_dir / "report.json").write_text(json.dumps(report, indent=2))
-
-            st.success("Build completed")
-            st.code(logs[-2000:] if len(logs) > 2000 else logs)
-
-            st.write("Validation report:")
-            st.json(report)
-
-            last_path = st.session_state.get("last_stl_path")
-            if last_path:
-                last_file = Path(last_path)
-                if last_file.exists():
-                    with open(last_file, "rb") as f:
-                        st.download_button("Download STL", f, file_name=last_file.name)
-
+            st.session_state["last_build"] = {
+                "job": job_name,
+                "stl": str(stl_path),
+                "report": report,
+                "logs": logs,
+            }
             if hasattr(st, "rerun"):
                 st.rerun()
             else:
@@ -469,4 +535,29 @@ if st.session_state.pop("build_requested", False):
                 st.code(log_path.read_text()[-2000:])
 
 else:
-    st.info("Click Build STL to generate output into /out/<job>/")
+    last_build = st.session_state.get("last_build")
+    if last_build:
+        stl_file = Path(last_build["stl"])
+        st.success(f"Build completed — {last_build['job']}/{stl_file.name}")
+
+        report = last_build.get("report", {})
+        if report.get("ok"):
+            size = report.get("size_xyz_mm", [0.0, 0.0, 0.0])
+            m1, m2, m3 = st.columns(3)
+            m1.metric("Size (mm)", f"{size[0]:.1f} × {size[1]:.1f} × {size[2]:.1f}")
+            m2.metric("Faces", f"{report.get('faces', 0):,}")
+            m3.metric("Watertight", "Yes" if report.get("watertight") else "No")
+        else:
+            st.warning(f"Validation: {report.get('error', 'unknown')}")
+
+        if stl_file.exists():
+            with open(stl_file, "rb") as f:
+                st.download_button("Download STL", f, file_name=stl_file.name)
+
+        with st.expander("OpenSCAD logs", expanded=False):
+            logs = last_build.get("logs", "")
+            st.code(logs[-2000:] if logs else "(empty)", language="text")
+        with st.expander("Full validation report", expanded=False):
+            st.json(report)
+    else:
+        st.info("Click Build STL to generate output into /out/<job>/")
