@@ -5,11 +5,16 @@
 PromptToSTL combines structured templates with OpenSCAD to create parametric 3D geometries. Designed as a local tool with AI extensibility, it supports interactive parameter editing, live previews, and STL validation.
 
 ## Features
-- **Local Streamlit GUI**: Modify parameters via a dynamic interface.
-- **Template-based generation**: Builds using `.scad` + `.json` templates.
-- **Repeatable builds**: Deterministic outputs with versioning.
-- **Live 3D preview**: Auto-refreshed STL previews.
-- **Extensible**: AI-driven workflows with LangChain planned.
+- **Photo lithophanes in seconds**: heart / circle / rectangle photo plates are
+  meshed natively in Python (numpy + trimesh) — no OpenSCAD needed, ~2 s builds.
+- **Visual template gallery**: browse designs by category, customize with
+  friendly labeled parameters, build, download.
+- **Local Streamlit GUI**: photo preprocessing (brightness/contrast/gamma/invert)
+  with live heightmap preview; live 3D viewer with color/material controls.
+- **My builds**: every build is re-editable — reload its settings, tweak, rebuild.
+- **Template-based generation**: text designs use `.scad` + `.json` templates via
+  OpenSCAD (auto-uses the fast Manifold backend on 2024.09+ snapshots).
+- **"Describe it" mode**: LLM routes a natural-language request to a template.
 
 ## Tech Stack
 - **Python**: Streamlit, trimesh
@@ -28,8 +33,11 @@ tests/            # Unit/validation tests
 ## Setup Instructions
 ### Requirements
 - Python ≥ 3.10
-- OpenSCAD (CLI accessible)
 - Libraries: `pip install -r requirements.txt`
+- OpenSCAD — only for text templates (keychain, coaster, nameplate, MOM/DAD
+  plaques). Photo lithophanes build without it. A
+  [2024.09+ snapshot](https://openscad.org/downloads.html#snapshots) renders
+  10–100× faster (Manifold backend, auto-detected).
 
 ### Running the App
 ```bash

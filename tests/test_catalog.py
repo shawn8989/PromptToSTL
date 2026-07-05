@@ -1,8 +1,6 @@
 """Tests for src/core/catalog.py — template discovery and loading."""
 from __future__ import annotations
 
-import json
-from pathlib import Path
 
 import pytest
 from src.core.catalog import list_templates, load_template

@@ -1,5 +1,6 @@
 import ast
 import json
+import shutil
 import subprocess
 import time
 import uuid
@@ -11,18 +12,16 @@ from dotenv import load_dotenv
 from src.core.catalog import list_templates, load_template
 from src.core.image_prep import prepare_lithophane_image
 from src.core.layout import layout_text
-from src.core.runner import run_openscad
+from src.core.litho_mesh import build_litho_mesh
+from src.core.runner import run_openscad, supports_manifold
 from src.core.validate import validate_stl
 from src.intent.router import route_intent
 from streamlit_stl import stl_from_file
-import trimesh
 try:
     import pyvista as pv
 except Exception:
     pv = None
 
-
-DEFAULT_OPENSCAD = "openscad"  # on mac: usually in PATH
 
 OUT_DIR = Path(__file__).resolve().parent / "out"
 PLACEHOLDER_STL = Path(__file__).resolve().parent / "templates" / "placeholder.stl"
@@ -66,150 +65,311 @@ def eval_expr(value, params):
     except Exception:
         return 0.0
 
+
+def detect_openscad() -> str:
+    """Best-guess OpenSCAD executable for this machine."""
+    candidates = [
+        shutil.which("openscad"),
+        "/Applications/OpenSCAD.app/Contents/MacOS/OpenSCAD",
+        str(Path.home() / "Applications/OpenSCAD.app/Contents/MacOS/OpenSCAD"),
+        "/usr/bin/openscad",
+        "/usr/local/bin/openscad",
+    ]
+    for c in candidates:
+        if c and Path(c).exists():
+            return c
+    return "openscad"
+
+
+@st.cache_data(show_spinner=False)
+def engine_status(exe: str) -> dict:
+    """Probe the OpenSCAD executable once (cached per path)."""
+    try:
+        p = subprocess.run([exe, "--version"], capture_output=True, text=True, timeout=10)
+        version = (p.stdout + p.stderr).strip().replace("OpenSCAD version ", "")
+        return {"ok": True, "version": version, "manifold": supports_manifold(exe)}
+    except Exception:
+        return {"ok": False, "version": "", "manifold": False}
+
+
+def load_jobs(limit: int = 8) -> list[dict]:
+    """Recent builds from out/*/spec.json, newest first."""
+    jobs = []
+    if not OUT_DIR.exists():
+        return jobs
+    for spec_file in OUT_DIR.glob("*/spec.json"):
+        try:
+            data = json.loads(spec_file.read_text())
+        except Exception:
+            continue
+        stls = sorted(spec_file.parent.glob("*.stl"),
+                      key=lambda p: p.stat().st_mtime, reverse=True)
+        if not stls:
+            continue
+        jobs.append({
+            "job": spec_file.parent.name,
+            "template_id": data.get("template_id", ""),
+            "params": data.get("params", {}),
+            "stl": stls[0],
+            "mtime": stls[0].stat().st_mtime,
+        })
+    return sorted(jobs, key=lambda j: j["mtime"], reverse=True)[:limit]
+
+
 st.set_page_config(page_title="PromptToSTL", page_icon="🧱", layout="wide")
-st.title("PromptToSTL")
-st.caption("Turn templates and photos into 3D-printable STL files with OpenSCAD.")
 
 if "preview_nonce" not in st.session_state:
     st.session_state["preview_nonce"] = 0
 
 templates = list_templates()
+schemas = {}
+for tid in templates:
+    schemas[tid], _ = load_template(tid)
 
 with st.sidebar:
-    st.header("PromptToSTL")
-    st.caption("Parametric STL generator")
-    st.divider()
-    openscad_exe = st.text_input("OpenSCAD executable", value=DEFAULT_OPENSCAD)
+    st.header("🧱 PromptToSTL")
+    st.caption("Photos and text → 3D-printable STL files")
     mode = st.radio("Mode", ["Manual", "Describe it"], horizontal=True)
-    st.caption(f"{len(templates)} templates available")
+    st.divider()
+    with st.expander("⚙️ Settings", expanded=False):
+        if "openscad_exe" not in st.session_state:
+            st.session_state["openscad_exe"] = detect_openscad()
+        openscad_exe = st.text_input("OpenSCAD executable",
+                                     key="openscad_exe",
+                                     help="Only needed for text templates — photo "
+                                          "lithophanes build without OpenSCAD.")
+        status = engine_status(openscad_exe)
+        if status["ok"]:
+            st.caption(f"✅ OpenSCAD {status['version']}")
+            if status["manifold"]:
+                st.caption("⚡ Manifold engine — fast renders")
+            else:
+                st.caption("🐢 Classic engine — an [OpenSCAD snapshot]"
+                           "(https://openscad.org/downloads.html#snapshots) "
+                           "renders 10-100× faster")
+        else:
+            st.warning("OpenSCAD not found. Text templates need it "
+                       "([download](https://openscad.org/downloads.html)) — "
+                       "photo lithophanes still work!")
+    st.caption(f"{len(templates)} designs · outputs in `out/`")
+
+openscad_exe = st.session_state.get("openscad_exe", "openscad")
+
+st.title("PromptToSTL")
+st.caption("Turn photos and text into 3D-printable gifts in seconds.")
 
 if not templates:
     st.error("No templates found. Add templates/<id>/schema.json and model.scad")
     st.stop()
+
+if "template_select" not in st.session_state:
+    st.session_state["template_select"] = templates[0]
+if st.session_state["template_select"] not in templates:
+    st.session_state["template_select"] = templates[0]
+if "show_gallery" not in st.session_state:
+    st.session_state["show_gallery"] = True
 
 colL, colR = st.columns([1, 1], gap="large")
 uploaded_svg = None
 
 with colL:
     if mode == "Describe it":
-        st.subheader("Describe it")
-        description = st.text_area("Describe your object", height=120)
+        st.subheader("✨ Describe it")
+        description = st.text_area(
+            "Describe your object",
+            height=120,
+            placeholder="e.g. A heart lithophane of my wedding photo, about 10 cm tall",
+        )
         if st.button("Generate Proposal"):
-            template_map = {}
-            for tid in templates:
-                schema, _ = load_template(tid)
-                template_map[tid] = schema
-            proposal = route_intent(description, template_map)
+            proposal = route_intent(description, schemas)
             st.session_state["intent_proposal"] = proposal
-            if hasattr(st, "rerun"):
-                st.rerun()
-            else:
-                st.experimental_rerun()
+            st.rerun()
 
         proposal = st.session_state.get("intent_proposal")
         if proposal:
             proposal_template = proposal.get("template_id", "")
-            proposal_schema, _ = load_template(proposal_template) if proposal_template in templates else (None, None)
-            if proposal_schema:
-                st.write(f"Template: {proposal_schema.get('label', proposal_template)}")
+            pschema = schemas.get(proposal_template)
+            if pschema:
+                st.write(f"Template: {pschema.get('icon', '')} "
+                         f"{pschema.get('label', proposal_template)}")
             else:
                 st.write(f"Template: {proposal_template}")
-            st.json(proposal.get("params", {}))
+            st.json(proposal.get("params", {}), expanded=False)
             notes = proposal.get("notes", "")
             if notes:
                 st.info(notes)
 
-            if st.button("Apply to Form"):
+            bc1, bc2 = st.columns(2)
+            if bc1.button("Apply to Form", type="primary"):
                 st.session_state["intent_template_id"] = proposal.get("template_id")
                 st.session_state["intent_params"] = proposal.get("params", {})
                 st.session_state["template_select"] = proposal.get("template_id")
-            if st.button("Regenerate"):
-                template_map = {}
-                for tid in templates:
-                    schema, _ = load_template(tid)
-                    template_map[tid] = schema
-                proposal = route_intent(description, template_map)
+                st.session_state["show_gallery"] = False
+                st.rerun()
+            if bc2.button("Regenerate"):
+                proposal = route_intent(description, schemas)
                 st.session_state["intent_proposal"] = proposal
-                if hasattr(st, "rerun"):
-                    st.rerun()
-                else:
-                    st.experimental_rerun()
+                st.rerun()
+        st.divider()
 
-    st.subheader("Template")
-    intent_template_id = st.session_state.get("intent_template_id")
-    if "template_select" not in st.session_state and intent_template_id in templates:
-        st.session_state["template_select"] = intent_template_id
-    template_id = st.selectbox("Choose template", templates, key="template_select")
+    # ── Step 1 · Choose a design ─────────────────────────────────────────
+    template_id = st.session_state["template_select"]
+
+    if st.session_state["show_gallery"]:
+        st.subheader("1 · Choose a design")
+        by_cat: dict[str, list] = {}
+        for tid in templates:
+            s = schemas[tid]
+            by_cat.setdefault(s.get("category", "More"), []).append(tid)
+        for cat in sorted(by_cat):
+            st.markdown(f"**{cat}**")
+            items = by_cat[cat]
+            for row in range(0, len(items), 3):
+                cols = st.columns(3)
+                for col, tid in zip(cols, items[row:row + 3]):
+                    s = schemas[tid]
+                    selected = tid == template_id
+                    with col, st.container(border=True):
+                        st.markdown(
+                            f"<div style='font-size:2rem;line-height:1'>"
+                            f"{s.get('icon', '📦')}</div>",
+                            unsafe_allow_html=True,
+                        )
+                        st.markdown(f"**{s.get('label', tid)}**")
+                        st.caption(s.get("description", ""))
+                        if st.button(
+                            "✓ Selected" if selected else "Select",
+                            key=f"pick_{tid}",
+                            type="primary" if selected else "secondary",
+                            use_container_width=True,
+                        ):
+                            st.session_state["template_select"] = tid
+                            st.session_state["show_gallery"] = False
+                            st.rerun()
+    else:
+        s = schemas[template_id]
+        hc1, hc2 = st.columns([4, 1])
+        hc1.subheader(f"{s.get('icon', '')} {s.get('label', template_id)}")
+        hc1.caption(s.get("description", ""))
+        if hc2.button("Change design"):
+            st.session_state["show_gallery"] = True
+            st.rerun()
+
+    template_id = st.session_state["template_select"]
     schema, scad_path = load_template(template_id)
+    is_native = bool(schema.get("native_litho"))
 
-    st.caption(schema.get("label", template_id))
-
-    st.subheader("Parameters")
+    # ── Step 2 · Customize ───────────────────────────────────────────────
+    st.subheader("2 · Customize")
     params = {}
-    intent_params = st.session_state.get("intent_params") if intent_template_id == template_id else None
+    intent_template_id = st.session_state.get("intent_template_id")
+    intent_params = (st.session_state.get("intent_params")
+                     if intent_template_id == template_id else None)
 
     def render_param(k, spec):
         default = spec.get("default")
         if intent_params and k in intent_params:
             default = intent_params.get(k)
+        label = spec.get("label", k)
+        unit = spec.get("unit")
+        disp = f"{label} ({unit})" if unit else label
+        help_txt = spec.get("help")
         t = spec["type"]
         if t == "string":
             options = spec.get("options")
             if options:
                 idx = options.index(str(default)) if default in options else 0
-                return st.selectbox(k, options, index=idx)
-            return st.text_input(k, value=str(default) if default is not None else "")
+                return st.selectbox(disp, options, index=idx, help=help_txt)
+            return st.text_input(disp, value=str(default) if default is not None else "",
+                                 help=help_txt)
         if t in {"int", "integer"}:
-            return st.number_input(k, value=int(default), step=1,
-                                   min_value=int(spec.get("min", -10**9)),
-                                   max_value=int(spec.get("max", 10**9)))
+            lo = int(spec.get("min", -10**9))
+            hi = int(spec.get("max", 10**9))
+            try:
+                val = min(hi, max(lo, int(float(default))))
+            except (TypeError, ValueError):
+                val = lo
+            return st.number_input(disp, value=val, step=1,
+                                   min_value=lo, max_value=hi, help=help_txt)
         if t == "number":
-            return st.number_input(k, value=float(default),
-                                   min_value=float(spec.get("min", -1e9)),
-                                   max_value=float(spec.get("max", 1e9)))
+            lo = float(spec.get("min", -1e9))
+            hi = float(spec.get("max", 1e9))
+            try:
+                val = min(hi, max(lo, float(default)))
+            except (TypeError, ValueError):
+                val = lo
+            if spec.get("widget") == "slider" and "min" in spec and "max" in spec:
+                return st.slider(disp, lo, hi, val, help=help_txt)
+            return st.number_input(disp, value=val,
+                                   min_value=lo, max_value=hi, help=help_txt)
         st.warning(f"Unknown type {t} for {k}")
         return default
 
     ADVANCED_PREFIXES = ("text_box_", "text_margin_", "text_block_", "hole")
-    main_specs, emblem_specs, advanced_specs = [], [], []
+    INLINE_GROUPS = ["Text", "Dimensions", "Style"]
+    grouped: dict[str, list] = {}
     for k, spec in schema["params"].items():
         if spec.get("hidden"):
             continue
-        if k.startswith("emblem_"):
-            emblem_specs.append((k, spec))
-        elif k.startswith(ADVANCED_PREFIXES) or k in {"debug", "holes"}:
-            advanced_specs.append((k, spec))
-        else:
-            main_specs.append((k, spec))
+        g = spec.get("group")
+        if g is None:
+            if k.startswith("emblem_"):
+                g = "Emblem"
+            elif k.startswith(ADVANCED_PREFIXES) or k in {"debug", "holes"}:
+                g = "Advanced"
+            else:
+                g = "main"
+        grouped.setdefault(g, []).append((k, spec))
 
-    for k, spec in main_specs:
+    for k, spec in grouped.get("main", []):
         params[k] = render_param(k, spec)
 
-    if emblem_specs:
+    for gname in INLINE_GROUPS:
+        entries = grouped.get(gname, [])
+        if not entries:
+            continue
+        st.markdown(f"**{gname}**")
+        if gname == "Dimensions" and len(entries) > 1:
+            cols = st.columns(2)
+            for i, (k, spec) in enumerate(entries):
+                with cols[i % 2]:
+                    params[k] = render_param(k, spec)
+        else:
+            for k, spec in entries:
+                params[k] = render_param(k, spec)
+
+    if grouped.get("Emblem"):
         with st.expander("Emblem settings", expanded=False):
-            for k, spec in emblem_specs:
+            for k, spec in grouped["Emblem"]:
                 params[k] = render_param(k, spec)
 
-    if advanced_specs:
+    if grouped.get("Advanced"):
         with st.expander("Advanced", expanded=False):
-            for k, spec in advanced_specs:
+            for k, spec in grouped["Advanced"]:
                 params[k] = render_param(k, spec)
 
-    photo_detail = 200
+    # ── Photo controls (lithophane templates) ────────────────────────────
+    photo_detail = 300 if is_native else 200
     photo_brightness = 1.0
     photo_contrast = 1.0
     photo_gamma = 1.0
     photo_invert = True
     if schema.get("accepts_image"):
-        st.subheader("Photo")
+        st.markdown("**Photo**")
         uploaded_photo = st.file_uploader(
             "Upload photo (JPG, PNG, HEIC)", type=["jpg", "jpeg", "png", "heic"]
         )
         photo_detail = st.slider(
-            "Photo detail (px)", min_value=100, max_value=400, value=200, step=25,
-            help="Heightmap resolution. Higher = sharper lithophane but much "
-                 "slower OpenSCAD render. 200 px renders in seconds; 400 px can "
-                 "take minutes.",
+            "Photo detail (px)",
+            min_value=100,
+            max_value=500 if is_native else 400,
+            value=300 if is_native else 200,
+            step=25,
+            help="Heightmap resolution — higher is sharper. "
+                 + ("Fast at any setting for this design."
+                    if is_native else
+                    "Higher values slow the OpenSCAD render a lot; 200 px is a "
+                    "good balance."),
         )
         pc1, pc2 = st.columns(2)
         with pc1:
@@ -244,9 +404,10 @@ with colL:
         uploaded_photo = None
 
     if schema.get("emblem_support"):
-        st.subheader("Emblem")
+        st.markdown("**Emblem**")
         uploaded_svg = st.file_uploader("SVG emblem", type=["svg"])
 
+    # ── Text layout ──────────────────────────────────────────────────────
     layout_debug = None
     text_box = schema.get("text_box") or {}
     if text_box and "text_size" in params:
@@ -343,8 +504,8 @@ with colL:
         params["emblem_x"] = snap_x + box_off_x
         params["emblem_y"] = snap_y + box_off_y
 
-    with st.expander("Layout Debug", expanded=False):
-        if layout_debug:
+    if layout_debug:
+        with st.expander("Layout debug", expanded=False):
             st.write(f"box_w: {box_w}")
             st.write(f"box_h: {box_h}")
             st.write(f"offset_x: {offset_x}")
@@ -354,101 +515,56 @@ with colL:
             st.write(f"offsets_y: {layout_debug.get('offsets_y')}")
             st.write(f"warning: {layout_debug.get('warning')}")
             st.write(f"truncated: {layout_debug.get('truncated')}")
-        else:
-            st.write("No layout data for this template.")
 
-    st.subheader("Build")
+    # ── Step 3 · Build ───────────────────────────────────────────────────
+    st.subheader("3 · Build")
     job_name = st.text_input("Output name", value=f"{template_id}_{uuid.uuid4().hex[:8]}")
-    build = st.button("Build STL", type="primary")
+    if is_native:
+        st.caption("⚡ Builds in seconds — no OpenSCAD needed.")
+    elif schema.get("accepts_image"):
+        st.caption("🕐 Renders with OpenSCAD — typically 30 s to a few minutes.")
+    else:
+        st.caption("🕐 Renders with OpenSCAD — typically 5–30 seconds.")
+    build = st.button("🛠️ Build STL", type="primary", use_container_width=True)
     if build:
         st.session_state["build_requested"] = True
 
 with colR:
     st.subheader("3D Preview")
 
-    use_placeholder = st.checkbox("Use placeholder")
-    open_external = st.checkbox("Open in external viewer")
+    # Auto-load the newest STL if nothing is selected yet
+    if not st.session_state.get("last_stl_path"):
+        stls = [p for p in OUT_DIR.rglob("*.stl") if p.resolve() != PLACEHOLDER_STL]
+        stls = sorted(stls, key=lambda p: p.stat().st_mtime, reverse=True)
+        if stls:
+            st.session_state["last_stl_path"] = str(stls[0])
 
-    st.caption("Load STL")
-    stl_files = [p for p in OUT_DIR.rglob("*.stl") if p.resolve() != PLACEHOLDER_STL]
-    stl_files = sorted(stl_files, key=lambda p: p.stat().st_mtime, reverse=True)
-    stl_labels = {}
-    for p in stl_files:
-        rel = p.relative_to(OUT_DIR)
-        job = rel.parts[0] if rel.parts else ""
-        mtime_str = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(p.stat().st_mtime))
-        label = f"{job}/{p.name} ({mtime_str})"
-        stl_labels[label] = p
-
-    if stl_labels:
-        selected_label = st.selectbox("Select STL", list(stl_labels.keys()))
-        if st.button("Load selected"):
-            st.session_state["last_stl_path"] = str(stl_labels[selected_label])
-            st.session_state["preview_nonce"] += 1
-    else:
-        st.info("No STL files found in /out.")
-
-    if st.button("Refresh preview"):
-        st.session_state["preview_nonce"] += 1
+    oc1, oc2, oc3 = st.columns([1, 1, 1])
+    preview_color = oc1.color_picker("Color", "#E8590C")
+    preview_material = oc2.selectbox("Material", ["material", "flat", "wireframe"], index=0)
+    preview_spin = oc3.checkbox("Spin", value=False)
 
     last = st.session_state.get("last_stl_path")
     preview_path = Path(last) if last else None
-    if use_placeholder:
-        preview_path = PLACEHOLDER_STL
 
     resolved_path = preview_path.resolve() if preview_path else None
     exists = resolved_path.exists() if resolved_path else False
     size = resolved_path.stat().st_size if exists else 0
 
-    with st.expander("Diagnostics", expanded=False):
-        st.write(f"Exists: {exists}")
-        st.write(f"Size: {size} bytes")
-        if resolved_path:
-            st.write(f"Path: {resolved_path}")
-        else:
-            st.write("Path: (none)")
-
-        if resolved_path and exists:
-            try:
-                with resolved_path.open("r", encoding="utf-8", errors="replace") as f:
-                    lines = []
-                    for _ in range(5):
-                        line = f.readline()
-                        if not line:
-                            break
-                        lines.append(line.rstrip("\n"))
-                st.code("\n".join(lines) if lines else "(file is empty)", language="text")
-            except Exception as e:
-                st.warning(f"Could not read preview lines: {e}")
-        else:
-            st.code("(no file to read)", language="text")
-
-    if open_external:
-        if resolved_path:
-            st.write(f"Full path: {resolved_path}")
-            if st.button("Open output folder"):
-                subprocess.run(["open", str(resolved_path.parent)])
-        else:
-            st.info("No preview path available.")
-
     if resolved_path and exists and size > 0:
         try:
             stl_from_file(
                 str(resolved_path),
-                height=500,
+                height=420,
+                color=preview_color,
+                material=preview_material,
+                auto_rotate=preview_spin,
                 key=f"stl_{st.session_state['preview_nonce']}",
             )
+            st.caption(f"Showing: {resolved_path.parent.name}/{resolved_path.name}")
         except Exception as e:
-            st.error(f"streamlit_stl failed: {e}")
-            try:
-                mesh = trimesh.load_mesh(resolved_path, force="mesh")
-                st.write(f"Bounds: {mesh.bounds.tolist()}")
-                st.write(f"Extents: {mesh.extents.tolist()}")
-            except Exception as mesh_err:
-                st.warning(f"trimesh failed: {mesh_err}")
-            if pv is None:
-                st.warning("PyVista is not available for fallback rendering.")
-            else:
+            st.error(f"Viewer failed: {e}")
+            if pv is not None:
                 try:
                     pv_mesh = pv.read(str(resolved_path))
                     plotter = pv.Plotter(off_screen=True)
@@ -458,13 +574,52 @@ with colR:
                     plotter.close()
                     if img is not None:
                         st.image(img, caption="Fallback preview (PyVista)")
-                    else:
-                        st.warning("PyVista did not return an image.")
                 except Exception as pv_err:
-                    st.warning(f"PyVista failed: {pv_err}")
+                    st.warning(f"PyVista fallback failed: {pv_err}")
     else:
-        st.info("No STL built yet. Click Build STL.")
-    
+        st.info("Your 3D preview will appear here after the first build.")
+
+    if st.button("🔄 Refresh preview"):
+        st.session_state["preview_nonce"] += 1
+        st.rerun()
+
+    with st.expander("Diagnostics", expanded=False):
+        st.write(f"Exists: {exists}")
+        st.write(f"Size: {size} bytes")
+        st.write(f"Path: {resolved_path if resolved_path else '(none)'}")
+        if st.checkbox("Show placeholder model"):
+            st.session_state["last_stl_path"] = str(PLACEHOLDER_STL)
+            st.session_state["preview_nonce"] += 1
+            st.rerun()
+        if resolved_path and st.button("Open output folder"):
+            subprocess.run(["open", str(resolved_path.parent)])
+
+    # ── My builds ────────────────────────────────────────────────────────
+    st.subheader("My builds")
+    jobs = load_jobs()
+    if not jobs:
+        st.caption("No builds yet — your creations will appear here.")
+    for jb in jobs:
+        jschema = schemas.get(jb["template_id"], {})
+        icon = jschema.get("icon", "📦")
+        with st.container(border=True):
+            jc1, jc2, jc3 = st.columns([3, 1, 1])
+            jc1.markdown(f"{icon} **{jb['job']}**")
+            jc1.caption(time.strftime("%b %d, %H:%M", time.localtime(jb["mtime"])))
+            if jc2.button("View", key=f"view_{jb['job']}"):
+                st.session_state["last_stl_path"] = str(jb["stl"])
+                st.session_state["preview_nonce"] += 1
+                st.rerun()
+            if jb["template_id"] in templates:
+                if jc3.button("Edit", key=f"edit_{jb['job']}",
+                              help="Load this build's settings into the form"):
+                    st.session_state["intent_template_id"] = jb["template_id"]
+                    st.session_state["intent_params"] = jb["params"]
+                    st.session_state["template_select"] = jb["template_id"]
+                    st.session_state["show_gallery"] = False
+                    st.rerun()
+
+st.divider()
 st.subheader("Output")
 if st.session_state.pop("build_requested", False):
     job_dir = OUT_DIR / job_name
@@ -479,7 +634,7 @@ if st.session_state.pop("build_requested", False):
 
     if schema.get("accepts_image"):
         if uploaded_photo is None:
-            st.error("This template requires a photo — upload one before building.")
+            st.error("This design needs a photo — upload one in step 2 first.")
             build_ok = False
         else:
             photo_png_path = job_dir / "photo.png"
@@ -508,43 +663,65 @@ if st.session_state.pop("build_requested", False):
         ))
 
         try:
-            with st.status("Rendering with OpenSCAD…", expanded=False) as status:
-                logs = run_openscad(openscad_exe, scad_path, stl_path, params)
-                log_path.write_text(logs)
-                report = validate_stl(stl_path)
-                (job_dir / "report.json").write_text(json.dumps(report, indent=2))
-                status.update(label="Build complete", state="complete")
+            if is_native:
+                with st.status("Generating mesh…", expanded=False) as status:
+                    t0 = time.time()
+                    mesh = build_litho_mesh(
+                        params["photo_path"], schema["native_litho"], params
+                    )
+                    mesh.export(stl_path)
+                    logs = (f"Native lithophane mesher: {len(mesh.faces):,} faces "
+                            f"in {time.time() - t0:.1f}s, "
+                            f"watertight={mesh.is_watertight}")
+                    log_path.write_text(logs)
+                    report = validate_stl(stl_path)
+                    (job_dir / "report.json").write_text(json.dumps(report, indent=2))
+                    status.update(label="Mesh generated", state="complete")
+            else:
+                with st.status("Rendering with OpenSCAD…", expanded=False) as status:
+                    logs = run_openscad(openscad_exe, scad_path, stl_path, params)
+                    log_path.write_text(logs)
+                    report = validate_stl(stl_path)
+                    (job_dir / "report.json").write_text(json.dumps(report, indent=2))
+                    status.update(label="Build complete", state="complete")
 
             st.session_state["last_stl_path"] = str(stl_path)
             st.session_state["preview_nonce"] += 1
+            st.session_state["just_built"] = True
             st.session_state["last_build"] = {
                 "job": job_name,
                 "stl": str(stl_path),
                 "report": report,
                 "logs": logs,
             }
-            if hasattr(st, "rerun"):
-                st.rerun()
-            else:
-                st.experimental_rerun()
+            st.rerun()
 
         except Exception as e:
-            st.error(str(e))
+            st.error(f"Build failed: {e}")
+            with st.container(border=True):
+                st.markdown(
+                    "**Things to try**\n"
+                    "- Photo designs: lower the *Photo detail* slider\n"
+                    "- Text designs: check the OpenSCAD path in ⚙️ Settings (sidebar)\n"
+                    "- Check the logs below for the exact error"
+                )
             if log_path.exists():
-                st.caption("Last logs:")
-                st.code(log_path.read_text()[-2000:])
+                with st.expander("Logs"):
+                    st.code(log_path.read_text()[-2000:], language="text")
 
 else:
     last_build = st.session_state.get("last_build")
+    if st.session_state.pop("just_built", False):
+        st.toast("STL ready 🎉")
     if last_build:
         stl_file = Path(last_build["stl"])
         st.success(f"Build completed — {last_build['job']}/{stl_file.name}")
 
         report = last_build.get("report", {})
         if report.get("ok"):
-            size = report.get("size_xyz_mm", [0.0, 0.0, 0.0])
+            size_xyz = report.get("size_xyz_mm", [0.0, 0.0, 0.0])
             m1, m2, m3 = st.columns(3)
-            m1.metric("Size (mm)", f"{size[0]:.1f} × {size[1]:.1f} × {size[2]:.1f}")
+            m1.metric("Size (mm)", f"{size_xyz[0]:.1f} × {size_xyz[1]:.1f} × {size_xyz[2]:.1f}")
             m2.metric("Faces", f"{report.get('faces', 0):,}")
             m3.metric("Watertight", "Yes" if report.get("watertight") else "No")
         else:
@@ -552,12 +729,13 @@ else:
 
         if stl_file.exists():
             with open(stl_file, "rb") as f:
-                st.download_button("Download STL", f, file_name=stl_file.name)
+                st.download_button("⬇️ Download STL", f, file_name=stl_file.name,
+                                   type="primary")
 
-        with st.expander("OpenSCAD logs", expanded=False):
+        with st.expander("Build logs", expanded=False):
             logs = last_build.get("logs", "")
             st.code(logs[-2000:] if logs else "(empty)", language="text")
         with st.expander("Full validation report", expanded=False):
             st.json(report)
     else:
-        st.info("Click Build STL to generate output into /out/<job>/")
+        st.info("Click Build STL to generate your first model.")

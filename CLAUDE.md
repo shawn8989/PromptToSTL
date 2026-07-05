@@ -34,19 +34,31 @@ The `OPENAI_API_KEY` environment variable (loaded via `.env`) is required for "D
 ### Request Flow
 
 ```
-app.py (Streamlit UI)
+app.py (Streamlit UI: gallery → customize → build wizard)
   ├── "Describe it" mode → src/intent/router.py → ChatOpenAI (gpt-4o-mini) → proposal JSON
-  ├── Template selector → src/core/catalog.py → reads templates/<id>/schema.json + model.scad
-  ├── Text layout      → src/core/layout.py → computes text_size, line splits, y-offsets
-  ├── Build button     → src/core/runner.py → subprocess OpenSCAD with -D param flags
-  └── Validation       → src/core/validate.py → trimesh mesh inspection
+  ├── Template gallery  → src/core/catalog.py → reads templates/<id>/schema.json + model.scad
+  ├── Text layout       → src/core/layout.py → computes text_size, line splits, y-offsets
+  ├── Build button      → schema has native_litho? → src/core/litho_mesh.py (pure Python, ~2 s)
+  │                       otherwise → src/core/runner.py → subprocess OpenSCAD with -D flags
+  │                       (auto-appends --backend=Manifold on 2024.09+ snapshots)
+  └── Validation        → src/core/validate.py → trimesh mesh inspection
 ```
+
+### Native Lithophane Mesher (`src/core/litho_mesh.py`)
+
+Templates with `"native_litho": "heart"|"circle"|"roundrect"` in their schema skip
+OpenSCAD entirely: `build_litho_mesh()` composes the whole plate (base + frame ring +
+photo heightfield) as one vertex grid and emits a watertight trimesh directly —
+~700× faster than OpenSCAD `surface()` and requires no OpenSCAD install.
+`lithophane_mom`/`_dad` still use OpenSCAD because their letters need `text()`.
+Wall windings are constructed outward-facing; do not add `fix_normals` (it costs
+~14 s at 300 px and is unnecessary).
 
 ### Template System
 
 Each template lives in `templates/<id>/` and requires two files:
 
-- **`schema.json`** — defines the template label, the `.scad` filename, optional `text_box` geometry expressions, `max_lines`, and a `params` map with `type`/`default`/`min`/`max` per parameter.
+- **`schema.json`** — defines the template label, the `.scad` filename, optional `text_box` geometry expressions, `max_lines`, and a `params` map with `type`/`default`/`min`/`max` per parameter. UI metadata: template-level `category`, `icon` (emoji), `description` drive the gallery cards; param-level `label`, `unit`, `help`, `group` ("Text"/"Dimensions"/"Style" render inline, "Emblem"/"Advanced" render in collapsed expanders; ungrouped params fall back to name-prefix heuristics), and `options` (renders a selectbox). `hidden: true` hides a param from the form.
 - **`model.scad`** (or `keychain.scad`) — OpenSCAD geometry that reads variables injected via `-D` CLI flags. All parameters in `schema.json` must have matching variable declarations in the `.scad` file.
 
 The `text_box` field in `schema.json` contains arithmetic expressions (evaluated by `eval_expr` in `app.py`) that compute the usable text area in mm from other parameters. This drives the auto-sizing logic in `layout.py`.
@@ -85,7 +97,7 @@ The `out/` directory is gitignored.
 
 ### Lithophane Photo Controls
 
-Templates with `accepts_image: true` show a photo uploader plus preprocessing controls in `app.py`: a "Photo detail" slider (100–400 px, default 200) that caps the heightmap resolution passed to `prepare_lithophane_image(max_px=...)`, and brightness/contrast/gamma/invert sliders with a live original-vs-heightmap preview. Keep detail near 200 px — OpenSCAD's `surface()` render time grows roughly quadratically with resolution, and `run_openscad` aborts after 300 s. The hidden `photo_cols`/`photo_rows` params are set from the processed image's actual pixel dimensions at build time.
+Templates with `accepts_image: true` show a photo uploader plus preprocessing controls in `app.py`: a "Photo detail" slider (native templates: 100–500 px, default 300; OpenSCAD templates: 100–400 px, default 200) that caps the heightmap resolution passed to `prepare_lithophane_image(max_px=...)`, and brightness/contrast/gamma/invert sliders with a live original-vs-heightmap preview. HEIC (iPhone) photos are supported via `pillow-heif`. For OpenSCAD-path templates keep detail near 200 px — `surface()` render time grows roughly quadratically with resolution, and `run_openscad` aborts after 300 s. The hidden `photo_cols`/`photo_rows` params are set from the processed image's actual pixel dimensions at build time.
 
 ### Emblem / SVG Support
 

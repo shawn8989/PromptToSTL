@@ -1,7 +1,11 @@
 streamlit>=1.30
 streamlit-stl
 Pillow>=10.0
+pillow-heif
+numpy
 trimesh
+networkx
+scipy
 langchain-openai
 python-dotenv
 pytest

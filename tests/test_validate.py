@@ -4,7 +4,6 @@ from __future__ import annotations
 import struct
 from pathlib import Path
 
-import pytest
 from src.core.validate import validate_stl
 
 

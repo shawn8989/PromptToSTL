@@ -1,6 +1,6 @@
 {
   "template_id": "coaster_round",
-  "label": "Coaster (Round)",
+  "label": "Custom Coaster",
   "scad_file": "model.scad",
   "max_lines": 2,
   "emblem_support": true,
@@ -13,59 +13,87 @@
   "params": {
     "line1": {
       "type": "string",
-      "default": "EDGE TECH"
+      "default": "EDGE TECH",
+      "label": "Line 1",
+      "group": "Text"
     },
     "line2": {
       "type": "string",
-      "default": ""
+      "default": "",
+      "label": "Line 2 (optional)",
+      "group": "Text"
     },
     "emboss": {
       "type": "integer",
       "default": 1,
       "min": 0,
-      "max": 1
+      "max": 1,
+      "label": "Raised text",
+      "group": "Style",
+      "help": "1 = raised (embossed) text, 0 = engraved."
     },
     "diameter": {
       "type": "number",
       "default": 90,
       "min": 50,
-      "max": 150
+      "max": 150,
+      "label": "Diameter",
+      "unit": "mm",
+      "group": "Dimensions"
     },
     "th": {
       "type": "number",
       "default": 4,
       "min": 2,
-      "max": 10
+      "max": 10,
+      "label": "Thickness",
+      "unit": "mm",
+      "group": "Dimensions"
     },
     "rim": {
       "type": "integer",
       "default": 1,
       "min": 0,
-      "max": 1
+      "max": 1,
+      "label": "Raised rim",
+      "group": "Style",
+      "help": "1 = keep drips contained."
     },
     "rim_w": {
       "type": "number",
       "default": 3,
       "min": 1,
-      "max": 10
+      "max": 10,
+      "label": "Rim width",
+      "unit": "mm",
+      "group": "Advanced"
     },
     "rim_h": {
       "type": "number",
       "default": 1.2,
       "min": 0.6,
-      "max": 3
+      "max": 3,
+      "label": "Rim height",
+      "unit": "mm",
+      "group": "Advanced"
     },
     "text_size": {
       "type": "number",
       "default": 12,
       "min": 6,
-      "max": 30
+      "max": 30,
+      "label": "Max text size",
+      "unit": "mm",
+      "group": "Text"
     },
     "line_gap": {
       "type": "number",
       "default": 10,
       "min": 4,
-      "max": 25
+      "max": 25,
+      "label": "Line spacing",
+      "unit": "mm",
+      "group": "Text"
     },
     "text_box_w": {
       "type": "number",
@@ -151,13 +179,22 @@
       "type": "number",
       "default": 1.0,
       "min": 0.6,
-      "max": 3
+      "max": 3,
+      "label": "Text emboss height",
+      "unit": "mm",
+      "group": "Style"
     },
     "pad": {
       "type": "number",
       "default": 6,
       "min": 2,
-      "max": 20
+      "max": 20,
+      "label": "Text padding",
+      "unit": "mm",
+      "group": "Advanced"
     }
-  }
+  },
+  "category": "Home & office",
+  "icon": "☕",
+  "description": "Round drink coaster with your text and an optional raised rim."
 }

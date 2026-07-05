@@ -1,6 +1,23 @@
 import subprocess
 from pathlib import Path
 
+_MANIFOLD_SUPPORT: dict = {}
+
+
+def supports_manifold(openscad_exe: str) -> bool:
+    """True if this OpenSCAD build accepts --backend (2024.09+ snapshots).
+    The Manifold backend renders 10-100x faster than CGAL. Probed once per
+    executable path and cached for the process lifetime."""
+    if openscad_exe not in _MANIFOLD_SUPPORT:
+        try:
+            p = subprocess.run([openscad_exe, "--help"],
+                               capture_output=True, text=True, timeout=10)
+            _MANIFOLD_SUPPORT[openscad_exe] = "--backend" in (p.stdout + p.stderr)
+        except Exception:
+            _MANIFOLD_SUPPORT[openscad_exe] = False
+    return _MANIFOLD_SUPPORT[openscad_exe]
+
+
 def run_openscad(openscad_exe: str, scad_path: Path, out_stl: Path, params: dict) -> str:
     """
     Runs OpenSCAD with -D defines. Returns combined stdout/stderr text.
@@ -10,6 +27,8 @@ def run_openscad(openscad_exe: str, scad_path: Path, out_stl: Path, params: dict
     out_stl.parent.mkdir(parents=True, exist_ok=True)
 
     cmd = [openscad_exe, "-o", str(out_stl)]
+    if supports_manifold(openscad_exe):
+        cmd.append("--backend=Manifold")
     for k, v in params.items():
         if isinstance(v, str):
             escaped = v.replace("\\", "\\\\").replace('"', '\\"')

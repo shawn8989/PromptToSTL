@@ -1,7 +1,6 @@
 """Tests for src/core/layout.py — no external dependencies."""
 from __future__ import annotations
 
-import pytest
 from src.core.layout import layout_text
 
 
