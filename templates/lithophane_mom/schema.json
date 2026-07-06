@@ -116,5 +116,6 @@
       "unit": "mm",
       "group": "Advanced"
     }
-  }
+  },
+  "color_swap_z": "base_height + max_thickness"
 }

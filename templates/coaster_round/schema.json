@@ -196,5 +196,6 @@
   },
   "category": "Home & office",
   "icon": "☕",
-  "description": "Round drink coaster with your text and an optional raised rim."
+  "description": "Round drink coaster with your text and an optional raised rim.",
+  "color_swap_z": "th"
 }

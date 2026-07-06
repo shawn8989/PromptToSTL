@@ -46,7 +46,7 @@ app.py (Streamlit UI: gallery → customize → build wizard)
 
 ### Native Lithophane Mesher (`src/core/litho_mesh.py`)
 
-Templates with `"native_litho": "heart"|"circle"|"roundrect"` in their schema skip
+Templates with `"native_litho": "heart"|"circle"|"roundrect"|"ornament"` in their schema skip
 OpenSCAD entirely: `build_litho_mesh()` composes the whole plate (base + frame ring +
 photo heightfield) as one vertex grid and emits a watertight trimesh directly —
 ~700× faster than OpenSCAD `surface()` and requires no OpenSCAD install.
@@ -93,7 +93,13 @@ The `out/` directory is gitignored.
 
 ### Intent Router (`src/intent/router.py`)
 
-`route_intent()` sends the user description + full template schemas to `gpt-4o-mini` and asks it to output `{template_id, params, notes}` JSON. The response is sanitized through `_sanitize_params()` which coerces types and clamps to `min`/`max` bounds. Adding a new template is sufficient for it to be available to the LLM automatically.
+`route_intent()` sends the user description + full template schemas to an LLM and asks it to output `{template_id, params, notes}` JSON. Provider: `_make_model()` picks Anthropic `claude-haiku-4-5` when `ANTHROPIC_API_KEY` is set (requires `langchain-anthropic`), else OpenAI `gpt-4o-mini`; `LLM_PROVIDER=anthropic|openai` forces a choice. The response is sanitized through `_sanitize_params()` which coerces types and clamps to `min`/`max` bounds. Adding a new template is sufficient for it to be available to the LLM automatically.
+
+"Describe it" mode in `app.py` is a chat (`st.chat_message`/`st.chat_input`): each reply auto-applies the proposal to the form via the `intent_*` session keys. Passing `current={"template_id", "params"}` to `route_intent()` switches the prompt to refinement mode ("make it wider" keeps everything else unchanged). `repair_params()` is the build-repair hook: on an OpenSCAD failure with an API key present, `app.py` asks it for corrected params and retries exactly once, flagging the result as auto-repaired.
+
+### Two-color / filament-swap hint
+
+A template-level `"color_swap_z"` schema field holds an `eval_expr` expression (e.g. `"th"`, `"base_height + max_thickness"`) for the Z height where raised text begins. After a successful build with `emboss == 1` (or no emboss param), the Output panel shows a "pause at Z = X mm and swap filament" tip computed from the built params.
 
 ### Lithophane Photo Controls
 

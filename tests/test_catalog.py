@@ -14,6 +14,14 @@ EXPECTED_TEMPLATES = {
     "lithophane_rectangle",
     "lithophane_mom",
     "lithophane_dad",
+    "lithophane_ornament",
+    "pet_tag",
+    "luggage_tag",
+    "desk_name_sign",
+    "fridge_magnet_text",
+    "phone_stand",
+    "wall_hook",
+    "mini_planter",
 }
 
 

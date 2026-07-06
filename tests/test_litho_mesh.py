@@ -94,3 +94,44 @@ def test_frame_too_large_raises(heightmap: Path) -> None:
     params["frame_width"] = 50.0  # exceeds radius
     with pytest.raises(ValueError):
         build_litho_mesh(heightmap, "circle", params)
+
+
+# ---------------------------------------------------------------------------
+# ornament (circle + hanger hole)
+# ---------------------------------------------------------------------------
+
+def _ornament_params() -> dict:
+    return {"diameter": 75.0, "hole_d": 4.0, "hole_ring": 2.5,
+            "min_thickness": MIN_T, "max_thickness": MAX_T,
+            "frame_width": FRAME, "base_height": BASE}
+
+
+def test_ornament_watertight(heightmap: Path) -> None:
+    mesh = build_litho_mesh(heightmap, "ornament", _ornament_params())
+    assert mesh.is_watertight
+    assert mesh.is_winding_consistent
+    assert mesh.volume > 0
+
+
+def test_ornament_has_hanger_hole(heightmap: Path) -> None:
+    """No vertex may sit inside the hole (minus one grid cell of slack)."""
+    p = _ornament_params()
+    mesh = build_litho_mesh(heightmap, "ornament", p)
+    hole_cy = p["diameter"] / 2.0 - p["hole_d"] / 2.0 - max(p["frame_width"], 3.0)
+    hole_r = p["hole_d"] / 2.0
+    d = np.linalg.norm(mesh.vertices[:, :2] - np.array([0.0, hole_cy]), axis=1)
+    assert d.min() < hole_r + 1.5, "no wall vertices near the hole — hole missing?"
+    inside = mesh.vertices[d < hole_r - 1.0]
+    assert len(inside) == 0, f"{len(inside)} vertices inside the hanger hole"
+
+
+def test_ornament_ring_reinforced(heightmap: Path) -> None:
+    """Vertices in the ring around the hole sit at full frame height."""
+    p = _ornament_params()
+    mesh = build_litho_mesh(heightmap, "ornament", p)
+    hole_cy = p["diameter"] / 2.0 - p["hole_d"] / 2.0 - max(p["frame_width"], 3.0)
+    d = np.linalg.norm(mesh.vertices[:, :2] - np.array([0.0, hole_cy]), axis=1)
+    ring = mesh.vertices[(d > p["hole_d"] / 2.0) & (d < p["hole_d"] / 2.0 + 1.5)
+                         & (mesh.vertices[:, 2] > 0.1)]
+    assert len(ring) > 0
+    assert ring[:, 2].max() == pytest.approx(BASE + MAX_T, abs=0.05)

@@ -75,7 +75,7 @@ def _shape_outlines(shape: str, params: dict) -> tuple[np.ndarray, np.ndarray, f
         w = float(params["heart_w"])
         h = float(params["heart_h"])
         return _heart_points(w, h), _heart_points(w - 2 * fw, h - 2 * fw), w, h
-    if shape == "circle":
+    if shape in ("circle", "ornament"):
         d = float(params["diameter"])
         return _circle_points(d), _circle_points(d - 2 * fw), d, d
     if shape == "roundrect":
@@ -86,6 +86,17 @@ def _shape_outlines(shape: str, params: dict) -> tuple[np.ndarray, np.ndarray, f
         return (_roundrect_points(w, h, r),
                 _roundrect_points(w - 2 * fw, h - 2 * fw, inner_r), w, h)
     raise ValueError(f"Unknown lithophane shape: {shape}")
+
+
+def _ornament_hole(params: dict) -> tuple[float, float, float]:
+    """(center_y, hole_r, ring_r) for the ornament hanger hole — placed just
+    inside the top edge, with a reinforcement ring at frame height."""
+    d = float(params["diameter"])
+    fw = float(params.get("frame_width", 4.0))
+    hole_d = float(params.get("hole_d", 4.0))
+    ring_w = float(params.get("hole_ring", 2.5))
+    cy = d / 2.0 - hole_d / 2.0 - max(fw, 3.0)
+    return cy, hole_d / 2.0, hole_d / 2.0 + ring_w
 
 
 # ── Rasterization helpers ────────────────────────────────────────────────────
@@ -162,11 +173,21 @@ def build_litho_mesh(heightmap_path: Path | str, shape: str, params: dict) -> tr
     outer_v = _rasterize(outer_pts, xs, ys)          # (ny, nx) at vertices
     inner_v = _rasterize(inner_pts, xs, ys)
 
+    ring_v = None
+    if shape == "ornament":
+        hole_cy, hole_r, ring_r = _ornament_hole(params)
+        hole_v = _rasterize(_circle_points(hole_r * 2) + [0.0, hole_cy], xs, ys)
+        ring_v = _rasterize(_circle_points(ring_r * 2) + [0.0, hole_cy], xs, ys)
+        outer_v &= ~hole_v      # hole cells go inactive → walls form around it
+        inner_v &= ~hole_v
+
     litho = _sample_heightmap(img, xs, ys, inner_w, inner_h)
     height = np.zeros((ny, nx))
     height[outer_v] = base + max_t                                  # frame
     interior = base + min_t + litho * (max_t - min_t) / 255.0
     height[inner_v] = interior[inner_v]                             # image
+    if ring_v is not None:
+        height[ring_v & outer_v] = base + max_t     # reinforce around the hole
 
     # Active cells: all 4 corner vertices inside the outer shape.
     cell = (outer_v[:-1, :-1] & outer_v[:-1, 1:]

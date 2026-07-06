@@ -1,5 +1,6 @@
 import ast
 import json
+import os
 import shutil
 import subprocess
 import time
@@ -15,7 +16,7 @@ from src.core.layout import layout_text
 from src.core.litho_mesh import build_litho_mesh
 from src.core.runner import run_openscad, supports_manifold
 from src.core.validate import validate_stl
-from src.intent.router import route_intent
+from src.intent.router import repair_params, route_intent
 from streamlit_stl import stl_from_file
 try:
     import pyvista as pv
@@ -175,41 +176,54 @@ uploaded_svg = None
 with colL:
     if mode == "Describe it":
         st.subheader("✨ Describe it")
-        description = st.text_area(
-            "Describe your object",
-            height=120,
-            placeholder="e.g. A heart lithophane of my wedding photo, about 10 cm tall",
+        has_ai_key = bool(os.environ.get("OPENAI_API_KEY")
+                          or os.environ.get("ANTHROPIC_API_KEY"))
+        if not has_ai_key:
+            st.info("Add OPENAI_API_KEY or ANTHROPIC_API_KEY to your `.env` "
+                    "to use AI mode.")
+        chat = st.session_state.setdefault("chat", [])
+        for msg in chat:
+            with st.chat_message(msg["role"]):
+                st.markdown(msg["content"])
+
+        chat_prompt = st.chat_input(
+            "Describe your object, or refine the current one…",
+            disabled=not has_ai_key,
         )
-        if st.button("Generate Proposal"):
-            proposal = route_intent(description, schemas)
-            st.session_state["intent_proposal"] = proposal
+        if chat_prompt:
+            chat.append({"role": "user", "content": chat_prompt})
+            current = None
+            if st.session_state.get("intent_template_id") in schemas:
+                current = {
+                    "template_id": st.session_state["intent_template_id"],
+                    "params": st.session_state.get("intent_params", {}),
+                }
+            try:
+                proposal = route_intent(chat_prompt, schemas, current=current)
+                tid = proposal["template_id"]
+                pschema = schemas.get(tid, {})
+                st.session_state["intent_template_id"] = tid
+                st.session_state["intent_params"] = proposal.get("params", {})
+                st.session_state["template_select"] = tid
+                st.session_state["show_gallery"] = False
+                verb = "Updated" if current and current["template_id"] == tid else "Set up"
+                reply = (f"{verb} **{pschema.get('icon', '')} "
+                         f"{pschema.get('label', tid)}** — the form below has "
+                         f"the new settings; tweak anything you like, then Build.")
+                notes = proposal.get("notes", "")
+                if notes:
+                    reply += f"\n\n_{notes}_"
+                chat.append({"role": "assistant", "content": reply})
+            except Exception as e:
+                chat.append({"role": "assistant",
+                             "content": f"Sorry, that didn't work: {e}"})
             st.rerun()
 
-        proposal = st.session_state.get("intent_proposal")
-        if proposal:
-            proposal_template = proposal.get("template_id", "")
-            pschema = schemas.get(proposal_template)
-            if pschema:
-                st.write(f"Template: {pschema.get('icon', '')} "
-                         f"{pschema.get('label', proposal_template)}")
-            else:
-                st.write(f"Template: {proposal_template}")
-            st.json(proposal.get("params", {}), expanded=False)
-            notes = proposal.get("notes", "")
-            if notes:
-                st.info(notes)
-
-            bc1, bc2 = st.columns(2)
-            if bc1.button("Apply to Form", type="primary"):
-                st.session_state["intent_template_id"] = proposal.get("template_id")
-                st.session_state["intent_params"] = proposal.get("params", {})
-                st.session_state["template_select"] = proposal.get("template_id")
-                st.session_state["show_gallery"] = False
-                st.rerun()
-            if bc2.button("Regenerate"):
-                proposal = route_intent(description, schemas)
-                st.session_state["intent_proposal"] = proposal
-                st.rerun()
+        if chat and st.button("↺ Reset chat"):
+            st.session_state["chat"] = []
+            st.session_state.pop("intent_template_id", None)
+            st.session_state.pop("intent_params", None)
+            st.rerun()
         st.divider()
 
     # ── Step 1 · Choose a design ─────────────────────────────────────────
@@ -662,6 +676,7 @@ if st.session_state.pop("build_requested", False):
             indent=2
         ))
 
+        repaired = False
         try:
             if is_native:
                 with st.status("Generating mesh…", expanded=False) as status:
@@ -679,11 +694,35 @@ if st.session_state.pop("build_requested", False):
                     status.update(label="Mesh generated", state="complete")
             else:
                 with st.status("Rendering with OpenSCAD…", expanded=False) as status:
-                    logs = run_openscad(openscad_exe, scad_path, stl_path, params)
+                    has_ai = bool(os.environ.get("OPENAI_API_KEY")
+                                  or os.environ.get("ANTHROPIC_API_KEY"))
+                    try:
+                        logs = run_openscad(openscad_exe, scad_path, stl_path, params)
+                    except RuntimeError as scad_err:
+                        if not has_ai:
+                            raise
+                        status.update(label="Build failed — asking AI for a parameter fix…")
+                        fixed = repair_params(schema, params, str(scad_err))
+                        if fixed is None:
+                            raise
+                        params = fixed
+                        spec_path.write_text(json.dumps(
+                            {"template_id": template_id, "params": params}, indent=2))
+                        logs = "[params auto-repaired by AI]\n" + run_openscad(
+                            openscad_exe, scad_path, stl_path, params)
+                        repaired = True
                     log_path.write_text(logs)
                     report = validate_stl(stl_path)
                     (job_dir / "report.json").write_text(json.dumps(report, indent=2))
                     status.update(label="Build complete", state="complete")
+
+            # Two-color filament-swap hint for raised-text designs
+            swap_z = None
+            swap_expr = schema.get("color_swap_z") or ""
+            if swap_expr and int(params.get("emboss", 1) or 0) == 1:
+                z = eval_expr(swap_expr, params)
+                if z > 0:
+                    swap_z = z
 
             st.session_state["last_stl_path"] = str(stl_path)
             st.session_state["preview_nonce"] += 1
@@ -693,6 +732,8 @@ if st.session_state.pop("build_requested", False):
                 "stl": str(stl_path),
                 "report": report,
                 "logs": logs,
+                "swap_z": swap_z,
+                "repaired": repaired,
             }
             st.rerun()
 
@@ -716,6 +757,13 @@ else:
     if last_build:
         stl_file = Path(last_build["stl"])
         st.success(f"Build completed — {last_build['job']}/{stl_file.name}")
+        if last_build.get("repaired"):
+            st.warning("⚙️ The first attempt failed and the parameters were "
+                       "auto-repaired by AI — double-check the dimensions below.")
+        if last_build.get("swap_z"):
+            st.info(f"🎨 Two-color tip: pause the print at **Z = "
+                    f"{last_build['swap_z']:.1f} mm** and swap filament to give "
+                    f"the raised text its own color.")
 
         report = last_build.get("report", {})
         if report.get("ok"):

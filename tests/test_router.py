@@ -92,3 +92,55 @@ def test_sanitize_drops_unknown_keys() -> None:
 def test_sanitize_empty_schema() -> None:
     result = _sanitize_params({}, {"something": 1})
     assert result == {}
+
+
+# ---------------------------------------------------------------------------
+# provider selection (_make_model) — offline, no API calls
+# ---------------------------------------------------------------------------
+
+def test_make_model_defaults_to_openai(monkeypatch) -> None:
+    from src.intent.router import _make_model
+    monkeypatch.delenv("LLM_PROVIDER", raising=False)
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+    model = _make_model()
+    assert type(model).__name__ == "ChatOpenAI"
+
+
+def test_make_model_prefers_anthropic_when_key_set(monkeypatch) -> None:
+    import src.intent.router as router
+    if router.ChatAnthropic is None:
+        pytest.skip("langchain-anthropic not installed")
+    monkeypatch.delenv("LLM_PROVIDER", raising=False)
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
+    model = router._make_model()
+    assert type(model).__name__ == "ChatAnthropic"
+
+
+def test_make_model_env_override_openai(monkeypatch) -> None:
+    from src.intent.router import _make_model
+    monkeypatch.setenv("LLM_PROVIDER", "openai")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+    model = _make_model()
+    assert type(model).__name__ == "ChatOpenAI"
+
+
+# ---------------------------------------------------------------------------
+# refinement message construction — offline
+# ---------------------------------------------------------------------------
+
+def test_build_messages_plain() -> None:
+    from src.intent.router import _build_messages
+    msgs = _build_messages("a dog tag", [{"template_id": "pet_tag"}])
+    assert msgs[0]["role"] == "system"
+    assert "REFINING" not in msgs[0]["content"]
+    assert "current" not in msgs[1]["content"]
+
+
+def test_build_messages_refinement_includes_current() -> None:
+    from src.intent.router import _build_messages
+    current = {"template_id": "pet_tag", "params": {"tag_w": 40}}
+    msgs = _build_messages("make it wider", [{"template_id": "pet_tag"}], current)
+    assert "REFINING" in msgs[0]["content"]
+    assert '"tag_w": 40' in msgs[1]["content"]

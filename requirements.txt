@@ -7,5 +7,6 @@ trimesh
 networkx
 scipy
 langchain-openai
+langchain-anthropic
 python-dotenv
 pytest
