@@ -22,6 +22,10 @@ EXPECTED_TEMPLATES = {
     "phone_stand",
     "wall_hook",
     "mini_planter",
+    "gridfinity_bin",
+    "cookie_cutter",
+    "spiral_vase",
+    "qr_plaque",
 }
 
 

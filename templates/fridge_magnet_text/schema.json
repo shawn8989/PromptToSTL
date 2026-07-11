@@ -14,31 +14,117 @@
     "offset_y": 0
   },
   "params": {
-    "line1": { "type": "string", "default": "GROCERIES", "label": "Line 1", "group": "Text" },
-    "line2": { "type": "string", "default": "", "label": "Line 2 (optional)", "group": "Text" },
-    "emboss": { "type": "integer", "default": 1, "min": 0, "max": 1,
-                "label": "Raised text", "group": "Style",
-                "help": "1 = raised (embossed) text, 0 = engraved." },
-    "w": { "type": "number", "default": 70, "min": 30, "max": 140,
-           "label": "Width", "unit": "mm", "group": "Dimensions" },
-    "h": { "type": "number", "default": 30, "min": 15, "max": 70,
-           "label": "Height", "unit": "mm", "group": "Dimensions" },
-    "th": { "type": "number", "default": 4, "min": 3, "max": 8,
-            "label": "Thickness", "unit": "mm", "group": "Dimensions" },
-    "corner_r": { "type": "number", "default": 5, "min": 0, "max": 15,
-                  "label": "Corner radius", "unit": "mm", "group": "Dimensions" },
-    "magnet_d": { "type": "number", "default": 10.4, "min": 5, "max": 25,
-                  "label": "Magnet diameter", "unit": "mm", "group": "Style",
-                  "help": "Pocket diameter — add ~0.4 mm to the magnet size for a snug fit." },
-    "magnet_depth": { "type": "number", "default": 2.2, "min": 1, "max": 5,
-                      "label": "Magnet pocket depth", "unit": "mm", "group": "Style" },
-    "magnet_count": { "type": "integer", "default": 2, "min": 1, "max": 3,
-                      "label": "Number of magnets", "group": "Style" },
-    "text_size": { "type": "number", "default": 14, "min": 6, "max": 40,
-                   "label": "Max text size", "unit": "mm", "group": "Text" },
-    "line_gap": { "type": "number", "default": 10, "min": 5, "max": 24,
-                  "label": "Line spacing", "unit": "mm", "group": "Text" },
-    "text_height": { "type": "number", "default": 1.2, "min": 0.6, "max": 3,
-                     "label": "Text emboss height", "unit": "mm", "group": "Style" }
-  }
+    "line1": {
+      "type": "string",
+      "default": "GROCERIES",
+      "label": "Line 1",
+      "group": "Text"
+    },
+    "line2": {
+      "type": "string",
+      "default": "",
+      "label": "Line 2 (optional)",
+      "group": "Text"
+    },
+    "emboss": {
+      "type": "integer",
+      "default": 1,
+      "min": 0,
+      "max": 1,
+      "label": "Raised text",
+      "group": "Style",
+      "help": "1 = raised (embossed) text, 0 = engraved."
+    },
+    "w": {
+      "type": "number",
+      "default": 70,
+      "min": 30,
+      "max": 140,
+      "label": "Width",
+      "unit": "mm",
+      "group": "Dimensions"
+    },
+    "h": {
+      "type": "number",
+      "default": 30,
+      "min": 15,
+      "max": 70,
+      "label": "Height",
+      "unit": "mm",
+      "group": "Dimensions"
+    },
+    "th": {
+      "type": "number",
+      "default": 4,
+      "min": 3,
+      "max": 8,
+      "label": "Thickness",
+      "unit": "mm",
+      "group": "Dimensions"
+    },
+    "corner_r": {
+      "type": "number",
+      "default": 5,
+      "min": 0,
+      "max": 15,
+      "label": "Corner radius",
+      "unit": "mm",
+      "group": "Dimensions"
+    },
+    "magnet_d": {
+      "type": "number",
+      "default": 10.4,
+      "min": 5,
+      "max": 25,
+      "label": "Magnet diameter",
+      "unit": "mm",
+      "group": "Style",
+      "help": "Pocket diameter — add ~0.4 mm to the magnet size for a snug fit."
+    },
+    "magnet_depth": {
+      "type": "number",
+      "default": 2.2,
+      "min": 1,
+      "max": 5,
+      "label": "Magnet pocket depth",
+      "unit": "mm",
+      "group": "Style"
+    },
+    "magnet_count": {
+      "type": "integer",
+      "default": 2,
+      "min": 1,
+      "max": 3,
+      "label": "Number of magnets",
+      "group": "Style"
+    },
+    "text_size": {
+      "type": "number",
+      "default": 14,
+      "min": 6,
+      "max": 40,
+      "label": "Max text size",
+      "unit": "mm",
+      "group": "Text"
+    },
+    "line_gap": {
+      "type": "number",
+      "default": 10,
+      "min": 5,
+      "max": 24,
+      "label": "Line spacing",
+      "unit": "mm",
+      "group": "Text"
+    },
+    "text_height": {
+      "type": "number",
+      "default": 1.2,
+      "min": 0.6,
+      "max": 3,
+      "label": "Text emboss height",
+      "unit": "mm",
+      "group": "Style"
+    }
+  },
+  "multipart": true
 }

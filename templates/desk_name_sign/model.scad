@@ -5,6 +5,7 @@
 line1 = "SHUNATHON OWENS";
 line2 = "";
 emboss = 1;
+part = "all";   // "all" | "base" | "text" — multi-color part export
 w = 150;
 sign_h = 40;
 depth = 34;
@@ -50,8 +51,8 @@ module text_block() {
 }
 
 if (emboss == 1) {
-  wedge();
-  on_face() text_block();
+  if (part != "text") wedge();
+  if (part != "base") on_face() text_block();
 } else {
   difference() {
     wedge();

@@ -16,6 +16,7 @@ emblem_rot = 0;
 emblem_mode = 1;
 emblem_depth = 1.2;
 emboss = 1;           // 1=emboss, 0=engrave
+part = "all";         // "all" | "base" | "text" — multi-color part export
 
 // Base (mm)
 w = 80;
@@ -67,32 +68,34 @@ module emblem_3d(z) {
   }
 }
 
-difference() {
-  base_plate();
+if (part != "text") {
+  difference() {
+    base_plate();
 
-  // hole
-  translate([0,0,-1]) keychain_hole();
+    // hole
+    translate([0,0,-1]) keychain_hole();
 
-  // engrave
-  if (emboss == 0) {
-    translate([0,0, th - text_height])
-      union() {
-        if (line2 == "") {
-          line_text_3d(line1, 0);
-        } else {
-          line_text_3d(line1, line_gap / 2);
-          line_text_3d(line2, -line_gap / 2);
+    // engrave
+    if (emboss == 0) {
+      translate([0,0, th - text_height])
+        union() {
+          if (line2 == "") {
+            line_text_3d(line1, 0);
+          } else {
+            line_text_3d(line1, line_gap / 2);
+            line_text_3d(line2, -line_gap / 2);
+          }
         }
-      }
-  }
+    }
 
-  if (emblem_mode == 0) {
-    emblem_3d(th - emblem_depth);
+    if (emblem_mode == 0) {
+      emblem_3d(th - emblem_depth);
+    }
   }
 }
 
 // emboss
-if (emboss == 1) {
+if (emboss == 1 && part != "base") {
   translate([0,0, th])
     union() {
       if (line2 == "") {
@@ -104,6 +107,6 @@ if (emboss == 1) {
     }
 }
 
-if (emblem_mode == 1) {
+if (emblem_mode == 1 && part != "base") {
   emblem_3d(th);
 }

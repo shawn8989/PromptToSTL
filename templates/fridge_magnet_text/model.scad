@@ -4,6 +4,7 @@
 line1 = "GROCERIES";
 line2 = "";
 emboss = 1;
+part = "all";   // "all" | "base" | "text" — multi-color part export
 w = 70;
 h = 30;
 th = 4;
@@ -45,9 +46,10 @@ function pocket_x(i) =
 
 difference() {
   union() {
-    linear_extrude(height = th)
-      rounded_rect_2d(w, h, corner_r);
-    if (emboss == 1)
+    if (part != "text")
+      linear_extrude(height = th)
+        rounded_rect_2d(w, h, corner_r);
+    if (emboss == 1 && part != "base")
       translate([0, 0, th]) text_block();
   }
   // magnet pockets, cut into the underside

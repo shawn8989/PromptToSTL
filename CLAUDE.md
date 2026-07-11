@@ -101,6 +101,14 @@ The `out/` directory is gitignored.
 
 A template-level `"color_swap_z"` schema field holds an `eval_expr` expression (e.g. `"th"`, `"base_height + max_thickness"`) for the Z height where raised text begins. After a successful build with `emboss == 1` (or no emboss param), the Output panel shows a "pause at Z = X mm and swap filament" tip computed from the built params.
 
+### Multi-part color export
+
+Templates with `"multipart": true` declare a `part = "all"|"base"|"text"` variable in their `.scad` with guards around the plate vs. raised-text geometry (`part` is injected by `app.py`, never a schema param). When `emboss == 1`, the Build step offers "Also export color parts": after the main render, OpenSCAD runs twice more with `-D part=...` into `<job>/parts/`, both STLs are zipped, and the Output panel shows a "Color parts (.zip)" download for per-part color assignment in the slicer.
+
+### QR Plaques
+
+`qr_plaque` uses `"qr_input": true`: the `qr_text` string param is turned into a QR PNG at build time by `src/core/qr.py` (`make_qr_png` — modules are white/255 = raised) and fed through the native mesher (`native_litho: "roundrect"`); `app.py` forces `plate_w == plate_h == size` so the code isn't stretched. No OpenSCAD involved; the checked-in `model.scad` is a blank-plate fallback only.
+
 ### Lithophane Photo Controls
 
 Templates with `accepts_image: true` show a photo uploader plus preprocessing controls in `app.py`: a "Photo detail" slider (native templates: 100–500 px, default 300; OpenSCAD templates: 100–400 px, default 200) that caps the heightmap resolution passed to `prepare_lithophane_image(max_px=...)`, and brightness/contrast/gamma/invert sliders with a live original-vs-heightmap preview. HEIC (iPhone) photos are supported via `pillow-heif`. For OpenSCAD-path templates keep detail near 200 px — `surface()` render time grows roughly quadratically with resolution, and `run_openscad` aborts after 300 s. The hidden `photo_cols`/`photo_rows` params are set from the processed image's actual pixel dimensions at build time.

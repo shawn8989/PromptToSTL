@@ -5,6 +5,7 @@ import shutil
 import subprocess
 import time
 import uuid
+import zipfile
 from pathlib import Path
 import streamlit as st
 
@@ -14,6 +15,7 @@ from src.core.catalog import list_templates, load_template
 from src.core.image_prep import prepare_lithophane_image
 from src.core.layout import layout_text
 from src.core.litho_mesh import build_litho_mesh
+from src.core.qr import make_qr_png
 from src.core.runner import run_openscad, supports_manifold
 from src.core.validate import validate_stl
 from src.intent.router import repair_params, route_intent
@@ -533,6 +535,15 @@ with colL:
     # ── Step 3 · Build ───────────────────────────────────────────────────
     st.subheader("3 · Build")
     job_name = st.text_input("Output name", value=f"{template_id}_{uuid.uuid4().hex[:8]}")
+    export_parts = False
+    if schema.get("multipart") and int(params.get("emboss", 1) or 0) == 1:
+        export_parts = st.checkbox(
+            "🎨 Also export color parts (base + text STLs)",
+            help="Two extra STLs for multi-color printing: import both into "
+                 "your slicer as one object and give each its own "
+                 "color/filament (AMS/MMU) — or print them as a reference "
+                 "for a manual filament swap.",
+        )
     if is_native:
         st.caption("⚡ Builds in seconds — no OpenSCAD needed.")
     elif schema.get("accepts_image"):
@@ -664,6 +675,21 @@ if st.session_state.pop("build_requested", False):
             params["photo_cols"] = photo_cols
             params["photo_rows"] = photo_rows
 
+    if build_ok and schema.get("qr_input"):
+        qr_text = str(params.get("qr_text", "")).strip()
+        if not qr_text:
+            st.error("Enter a URL or text for the QR code in step 2 first.")
+            build_ok = False
+        else:
+            qr_png_path = job_dir / "qr.png"
+            qr_cols, qr_rows = make_qr_png(qr_text, qr_png_path)
+            params["photo_path"] = str(qr_png_path.resolve())
+            params["photo_cols"] = qr_cols
+            params["photo_rows"] = qr_rows
+            # the plaque is square so the code isn't stretched
+            params["plate_w"] = float(params.get("size", 80))
+            params["plate_h"] = float(params.get("size", 80))
+
     if build_ok and schema.get("emblem_support") and uploaded_svg is not None:
         emblem_path = job_dir / "emblem.svg"
         emblem_path.write_bytes(uploaded_svg.getvalue())
@@ -714,6 +740,21 @@ if st.session_state.pop("build_requested", False):
                     log_path.write_text(logs)
                     report = validate_stl(stl_path)
                     (job_dir / "report.json").write_text(json.dumps(report, indent=2))
+
+                    if export_parts:
+                        status.update(label="Exporting color parts…")
+                        parts_dir = job_dir / "parts"
+                        base_stl = parts_dir / f"{job_name}_base.stl"
+                        text_stl = parts_dir / f"{job_name}_text.stl"
+                        run_openscad(openscad_exe, scad_path, base_stl,
+                                     {**params, "part": "base"})
+                        run_openscad(openscad_exe, scad_path, text_stl,
+                                     {**params, "part": "text"})
+                        parts_zip_path = job_dir / f"{job_name}_color_parts.zip"
+                        with zipfile.ZipFile(parts_zip_path, "w") as zf:
+                            zf.write(base_stl, base_stl.name)
+                            zf.write(text_stl, text_stl.name)
+
                     status.update(label="Build complete", state="complete")
 
             # Two-color filament-swap hint for raised-text designs
@@ -734,6 +775,8 @@ if st.session_state.pop("build_requested", False):
                 "logs": logs,
                 "swap_z": swap_z,
                 "repaired": repaired,
+                "parts_zip": str(job_dir / f"{job_name}_color_parts.zip")
+                             if (export_parts and not is_native) else None,
             }
             st.rerun()
 
@@ -779,6 +822,13 @@ else:
             with open(stl_file, "rb") as f:
                 st.download_button("⬇️ Download STL", f, file_name=stl_file.name,
                                    type="primary")
+        parts_zip = last_build.get("parts_zip")
+        if parts_zip and Path(parts_zip).exists():
+            with open(parts_zip, "rb") as f:
+                st.download_button("🎨 Color parts (.zip)", f,
+                                   file_name=Path(parts_zip).name)
+            st.caption("Import both STLs into your slicer as parts of one "
+                       "object and assign each its own color.")
 
         with st.expander("Build logs", expanded=False):
             logs = last_build.get("logs", "")

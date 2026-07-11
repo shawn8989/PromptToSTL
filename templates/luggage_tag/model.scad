@@ -3,6 +3,7 @@
 line1 = "S. OWENS";
 line2 = "+1 555 0100";
 emboss = 1;
+part = "all";   // "all" | "base" | "text" — multi-color part export
 w = 85;
 h = 50;
 th = 3;
@@ -48,9 +49,10 @@ module text_block() {
 
 difference() {
   union() {
-    linear_extrude(height = th)
-      rounded_rect_2d(w, h, corner_r);
-    if (emboss == 1)
+    if (part != "text")
+      linear_extrude(height = th)
+        rounded_rect_2d(w, h, corner_r);
+    if (emboss == 1 && part != "base")
       translate([0, 0, th]) text_block();
   }
   translate([0, 0, -1])

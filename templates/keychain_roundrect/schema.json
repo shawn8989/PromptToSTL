@@ -179,5 +179,6 @@
   "category": "Text & signs",
   "icon": "🔑",
   "description": "Rounded-rectangle keychain with your name and a ring hole.",
-  "color_swap_z": "th"
+  "color_swap_z": "th",
+  "multipart": true
 }

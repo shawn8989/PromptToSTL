@@ -14,29 +14,115 @@
     "offset_y": 0
   },
   "params": {
-    "line1": { "type": "string", "default": "S. OWENS", "label": "Name", "group": "Text" },
-    "line2": { "type": "string", "default": "+1 555 0100", "label": "Phone / email", "group": "Text" },
-    "emboss": { "type": "integer", "default": 1, "min": 0, "max": 1,
-                "label": "Raised text", "group": "Style",
-                "help": "1 = raised (embossed) text, 0 = engraved." },
-    "w": { "type": "number", "default": 85, "min": 60, "max": 120,
-           "label": "Width", "unit": "mm", "group": "Dimensions" },
-    "h": { "type": "number", "default": 50, "min": 35, "max": 80,
-           "label": "Height", "unit": "mm", "group": "Dimensions" },
-    "th": { "type": "number", "default": 3, "min": 2, "max": 6,
-            "label": "Thickness", "unit": "mm", "group": "Dimensions" },
-    "corner_r": { "type": "number", "default": 6, "min": 0, "max": 15,
-                  "label": "Corner radius", "unit": "mm", "group": "Dimensions" },
-    "slot_w": { "type": "number", "default": 18, "min": 10, "max": 30,
-                "label": "Strap slot length", "unit": "mm", "group": "Dimensions" },
-    "slot_h": { "type": "number", "default": 5, "min": 3, "max": 10,
-                "label": "Strap slot width", "unit": "mm", "group": "Dimensions" },
-    "slot_zone": { "type": "number", "default": 22, "min": 14, "max": 36, "hidden": true },
-    "text_size": { "type": "number", "default": 11, "min": 5, "max": 24,
-                   "label": "Max text size", "unit": "mm", "group": "Text" },
-    "line_gap": { "type": "number", "default": 12, "min": 5, "max": 24,
-                  "label": "Line spacing", "unit": "mm", "group": "Text" },
-    "text_height": { "type": "number", "default": 1.0, "min": 0.6, "max": 2.5,
-                     "label": "Text emboss height", "unit": "mm", "group": "Style" }
-  }
+    "line1": {
+      "type": "string",
+      "default": "S. OWENS",
+      "label": "Name",
+      "group": "Text"
+    },
+    "line2": {
+      "type": "string",
+      "default": "+1 555 0100",
+      "label": "Phone / email",
+      "group": "Text"
+    },
+    "emboss": {
+      "type": "integer",
+      "default": 1,
+      "min": 0,
+      "max": 1,
+      "label": "Raised text",
+      "group": "Style",
+      "help": "1 = raised (embossed) text, 0 = engraved."
+    },
+    "w": {
+      "type": "number",
+      "default": 85,
+      "min": 60,
+      "max": 120,
+      "label": "Width",
+      "unit": "mm",
+      "group": "Dimensions"
+    },
+    "h": {
+      "type": "number",
+      "default": 50,
+      "min": 35,
+      "max": 80,
+      "label": "Height",
+      "unit": "mm",
+      "group": "Dimensions"
+    },
+    "th": {
+      "type": "number",
+      "default": 3,
+      "min": 2,
+      "max": 6,
+      "label": "Thickness",
+      "unit": "mm",
+      "group": "Dimensions"
+    },
+    "corner_r": {
+      "type": "number",
+      "default": 6,
+      "min": 0,
+      "max": 15,
+      "label": "Corner radius",
+      "unit": "mm",
+      "group": "Dimensions"
+    },
+    "slot_w": {
+      "type": "number",
+      "default": 18,
+      "min": 10,
+      "max": 30,
+      "label": "Strap slot length",
+      "unit": "mm",
+      "group": "Dimensions"
+    },
+    "slot_h": {
+      "type": "number",
+      "default": 5,
+      "min": 3,
+      "max": 10,
+      "label": "Strap slot width",
+      "unit": "mm",
+      "group": "Dimensions"
+    },
+    "slot_zone": {
+      "type": "number",
+      "default": 22,
+      "min": 14,
+      "max": 36,
+      "hidden": true
+    },
+    "text_size": {
+      "type": "number",
+      "default": 11,
+      "min": 5,
+      "max": 24,
+      "label": "Max text size",
+      "unit": "mm",
+      "group": "Text"
+    },
+    "line_gap": {
+      "type": "number",
+      "default": 12,
+      "min": 5,
+      "max": 24,
+      "label": "Line spacing",
+      "unit": "mm",
+      "group": "Text"
+    },
+    "text_height": {
+      "type": "number",
+      "default": 1.0,
+      "min": 0.6,
+      "max": 2.5,
+      "label": "Text emboss height",
+      "unit": "mm",
+      "group": "Style"
+    }
+  },
+  "multipart": true
 }

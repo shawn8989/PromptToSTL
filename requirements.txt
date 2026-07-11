@@ -8,5 +8,6 @@ networkx
 scipy
 langchain-openai
 langchain-anthropic
+qrcode
 python-dotenv
 pytest

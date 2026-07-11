@@ -113,7 +113,12 @@ _ROUTING_HINTS = (
     "  mini_planter: tapered succulent pot with drainage holes.\n"
     "  keychain_roundrect: name keychain.\n"
     "  coaster_round: drink coaster with text.\n"
-    "  nameplate: desk/door nameplate, up to 3 lines."
+    "  nameplate: desk/door nameplate, up to 3 lines.\n"
+    "  qr_plaque: scannable raised QR-code plaque — put the URL/text in the "
+    "qr_text param (WiFi cards, menus, business links).\n"
+    "  gridfinity_bin: Gridfinity-compatible storage bin (grid units).\n"
+    "  cookie_cutter: heart/star/circle/hexagon cookie cutter.\n"
+    "  spiral_vase: twisted lobed vase for vase-mode printing."
 )
 
 

@@ -4,6 +4,7 @@ line1 = "MAX";
 line2 = "";
 shape = "bone";        // "bone" | "round" | "heart"
 emboss = 1;
+part = "all";          // "all" | "base" | "text" — multi-color part export
 tag_w = 40;
 th = 3;
 hole_d = 4;
@@ -71,12 +72,14 @@ module text_block() {
 
 difference() {
   union() {
-    linear_extrude(height = th) tag_2d();
-    // hanger boss
-    translate([0, boss_y, 0])
-      linear_extrude(height = th)
-        circle(r = boss_r);
-    if (emboss == 1)
+    if (part != "text") {
+      linear_extrude(height = th) tag_2d();
+      // hanger boss
+      translate([0, boss_y, 0])
+        linear_extrude(height = th)
+          circle(r = boss_r);
+    }
+    if (emboss == 1 && part != "base")
       translate([0, 0, th]) text_block();
   }
   // ring hole

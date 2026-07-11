@@ -272,5 +272,6 @@
   "category": "Text & signs",
   "icon": "🪧",
   "description": "Desk or door nameplate — up to three lines, optional SVG emblem.",
-  "color_swap_z": "th"
+  "color_swap_z": "th",
+  "multipart": true
 }
