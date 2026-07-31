@@ -3,6 +3,7 @@ import json
 import os
 import shutil
 import subprocess
+import sys
 import time
 import uuid
 import zipfile
@@ -29,8 +30,28 @@ except Exception:
 OUT_DIR = Path(__file__).resolve().parent / "out"
 PLACEHOLDER_STL = Path(__file__).resolve().parent / "templates" / "placeholder.stl"
 TEXT_MARGIN = 0.9
+MAX_KEPT_JOBS = 20   # cloud hosts have small ephemeral disks
 
 load_dotenv()
+
+# Streamlit Community Cloud supplies API keys via st.secrets rather than .env;
+# mirror them into the environment so src/intent/router.py works either way.
+try:
+    for _key in ("OPENAI_API_KEY", "ANTHROPIC_API_KEY", "LLM_PROVIDER"):
+        if _key in st.secrets and not os.environ.get(_key):
+            os.environ[_key] = str(st.secrets[_key])
+except Exception:
+    pass  # no secrets.toml locally — .env already handled it
+
+
+def prune_jobs(keep: int = MAX_KEPT_JOBS) -> None:
+    """Keep only the newest `keep` job folders in out/ (hosted disks are small
+    and ephemeral; users download the STLs they want to keep)."""
+    if not OUT_DIR.exists():
+        return
+    jobs = [d for d in OUT_DIR.iterdir() if d.is_dir() and not d.name.startswith(".")]
+    for stale in sorted(jobs, key=lambda d: d.stat().st_mtime, reverse=True)[keep:]:
+        shutil.rmtree(stale, ignore_errors=True)
 
 
 def eval_expr(value, params):
@@ -616,7 +637,9 @@ with colR:
             st.session_state["last_stl_path"] = str(PLACEHOLDER_STL)
             st.session_state["preview_nonce"] += 1
             st.rerun()
-        if resolved_path and st.button("Open output folder"):
+        # Only meaningful when the app runs on the user's own machine
+        if (sys.platform == "darwin" and resolved_path
+                and st.button("Open output folder")):
             subprocess.run(["open", str(resolved_path.parent)])
 
     # ── My builds ────────────────────────────────────────────────────────
@@ -765,6 +788,7 @@ if st.session_state.pop("build_requested", False):
                 if z > 0:
                     swap_z = z
 
+            prune_jobs()
             st.session_state["last_stl_path"] = str(stl_path)
             st.session_state["preview_nonce"] += 1
             st.session_state["just_built"] = True

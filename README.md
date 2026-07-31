@@ -54,6 +54,37 @@ pytest                      # Run unit tests
 ruff src/ tests/            # Linter checks
 ```
 
+## Deploy to the web (use it from your phone)
+
+The app runs on **[Streamlit Community Cloud](https://share.streamlit.io)** for
+free, straight from this repo — no server to manage, and it redeploys on every
+push. `packages.txt` installs OpenSCAD and the Liberation fonts on the server,
+so all templates work (photo lithophanes and QR plaques need no OpenSCAD at all).
+
+1. Go to **share.streamlit.io** and sign in with GitHub.
+2. **Create app** → select this repo, pick the branch, main file `app.py`.
+3. *(Optional — only for the AI "Describe it" chat and auto-repair)*
+   App **Settings → Secrets**, paste one of:
+   ```toml
+   OPENAI_API_KEY = "sk-…"
+   # or
+   ANTHROPIC_API_KEY = "sk-ant-…"
+   ```
+4. Deploy. You get a public `https://<name>.streamlit.app` URL that works on
+   any phone or laptop.
+
+Notes:
+- The free tier has ~1 GB RAM. Native templates (photo lithophanes, ornaments,
+  QR plaques) are fast; heavy OpenSCAD renders like the MOM/DAD plaques at high
+  photo detail may be slow.
+- The app is public by default — restrict it to invited viewers in the app
+  settings if you'd rather keep it private.
+- Files in `out/` are ephemeral (cleared on redeploy, and pruned to the newest
+  20 builds), so download STLs you want to keep.
+
+Alternative free host: **Hugging Face Spaces** (choose the Streamlit SDK; it
+reads the same `requirements.txt` and `packages.txt`).
+
 ## Roadmap
 ### Short Term
 - Add templates (coaster, nameplate)
