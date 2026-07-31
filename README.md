@@ -63,6 +63,12 @@ so all templates work (photo lithophanes and QR plaques need no OpenSCAD at all)
 
 1. Go to **share.streamlit.io** and sign in with GitHub.
 2. **Create app** → select this repo, pick the branch, main file `app.py`.
+   In **Advanced settings**, set **Python version to 3.13** (or 3.12).
+   ⚠️ Python **3.14 does not work**: pydantic (pulled in by langchain) calls
+   `typing._eval_type(..., prefer_fwd_module=True)`, which 3.14 removed, so
+   importing `src/intent/router.py` raises `TypeError` and the app never
+   starts. Everything else — Streamlit, trimesh, numpy, the mesher — is
+   fine on 3.14; only the AI dependency chain breaks.
 3. *(Optional — only for the AI "Describe it" chat and auto-repair)*
    App **Settings → Secrets**, paste one of:
    ```toml
