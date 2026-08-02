@@ -6,23 +6,85 @@
   "icon": "📱",
   "description": "Adjustable-angle desk stand with a charging-cable slot.",
   "params": {
-    "w": { "type": "number", "default": 70, "min": 50, "max": 120,
-           "label": "Width", "unit": "mm", "group": "Dimensions" },
-    "depth": { "type": "number", "default": 78, "min": 55, "max": 120,
-               "label": "Base depth", "unit": "mm", "group": "Dimensions" },
-    "tilt": { "type": "number", "default": 65, "min": 45, "max": 85,
-              "label": "Recline angle", "unit": "°", "group": "Style",
-              "help": "90° is upright; lower values lean the phone back more." },
-    "rest_h": { "type": "number", "default": 90, "min": 50, "max": 140,
-                "label": "Back rest height", "unit": "mm", "group": "Dimensions" },
-    "phone_th": { "type": "number", "default": 13, "min": 8, "max": 22,
-                  "label": "Phone slot width", "unit": "mm", "group": "Style",
-                  "help": "Phone thickness incl. case. 13 mm fits most cased phones." },
-    "lip_h": { "type": "number", "default": 16, "min": 8, "max": 30,
-               "label": "Front lip height", "unit": "mm", "group": "Style" },
-    "base_th": { "type": "number", "default": 5, "min": 3, "max": 10,
-                 "label": "Base thickness", "unit": "mm", "group": "Advanced" },
-    "slot_w": { "type": "number", "default": 14, "min": 8, "max": 30,
-                "label": "Cable slot width", "unit": "mm", "group": "Style" }
+    "w": {
+      "type": "number",
+      "default": 70,
+      "min": 50,
+      "max": 120,
+      "label": "Width",
+      "unit": "mm",
+      "group": "Dimensions",
+      "help": "Overall width."
+    },
+    "depth": {
+      "type": "number",
+      "default": 78,
+      "min": 55,
+      "max": 120,
+      "label": "Depth",
+      "unit": "mm",
+      "group": "Dimensions",
+      "help": "Front-to-back depth of the base."
+    },
+    "tilt": {
+      "type": "number",
+      "default": 65,
+      "min": 45,
+      "max": 85,
+      "label": "Recline angle",
+      "unit": "°",
+      "group": "Style",
+      "help": "90° stands the phone upright; lower values lean it back further."
+    },
+    "rest_h": {
+      "type": "number",
+      "default": 90,
+      "min": 50,
+      "max": 140,
+      "label": "Back rest height",
+      "unit": "mm",
+      "group": "Dimensions",
+      "help": "How far up the back support reaches."
+    },
+    "phone_th": {
+      "type": "number",
+      "default": 13,
+      "min": 8,
+      "max": 22,
+      "label": "Phone slot width",
+      "unit": "mm",
+      "group": "Style",
+      "help": "Your phone's thickness including its case. 13 mm fits most."
+    },
+    "lip_h": {
+      "type": "number",
+      "default": 16,
+      "min": 8,
+      "max": 30,
+      "label": "Front lip height",
+      "unit": "mm",
+      "group": "Style",
+      "help": "The ledge the phone rests on. Taller holds more securely but covers more of the screen."
+    },
+    "base_th": {
+      "type": "number",
+      "default": 5,
+      "min": 3,
+      "max": 10,
+      "label": "Base thickness",
+      "unit": "mm",
+      "group": "Advanced",
+      "help": "Thickness of the base slab."
+    },
+    "slot_w": {
+      "type": "number",
+      "default": 14,
+      "min": 8,
+      "max": 30,
+      "label": "Cable slot width",
+      "unit": "mm",
+      "group": "Style",
+      "help": "Gap for a charging cable to pass through."
+    }
   }
 }

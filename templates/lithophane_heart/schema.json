@@ -8,22 +8,84 @@
   "icon": "❤️",
   "description": "Your photo in a heart-shaped backlit plate. Builds in seconds.",
   "params": {
-    "photo_path": { "type": "string", "default": "", "hidden": true },
-    "photo_cols": { "type": "integer", "default": 200, "min": 50, "max": 1024, "hidden": true },
-    "photo_rows": { "type": "integer", "default": 200, "min": 50, "max": 1024, "hidden": true },
-    "heart_w": { "type": "number", "default": 80, "min": 30, "max": 200,
-                 "label": "Width", "unit": "mm", "group": "Dimensions" },
-    "heart_h": { "type": "number", "default": 80, "min": 30, "max": 200,
-                 "label": "Height", "unit": "mm", "group": "Dimensions" },
-    "frame_width": { "type": "number", "default": 4, "min": 1, "max": 15,
-                     "label": "Frame width", "unit": "mm", "group": "Dimensions" },
-    "min_thickness": { "type": "number", "default": 0.8, "min": 0.4, "max": 1.5,
-                       "label": "Thinnest layer", "unit": "mm", "group": "Advanced",
-                       "help": "Brightest image areas. Lower = brighter highlights, but harder to print." },
-    "max_thickness": { "type": "number", "default": 3.0, "min": 1.5, "max": 5.0,
-                       "label": "Thickest layer", "unit": "mm", "group": "Advanced",
-                       "help": "Darkest image areas. Higher = more contrast, longer print." },
-    "base_height": { "type": "number", "default": 1.2, "min": 0.4, "max": 3.0,
-                     "label": "Base plate height", "unit": "mm", "group": "Advanced" }
+    "photo_path": {
+      "type": "string",
+      "default": "",
+      "hidden": true
+    },
+    "photo_cols": {
+      "type": "integer",
+      "default": 200,
+      "min": 50,
+      "max": 1024,
+      "hidden": true
+    },
+    "photo_rows": {
+      "type": "integer",
+      "default": 200,
+      "min": 50,
+      "max": 1024,
+      "hidden": true
+    },
+    "heart_w": {
+      "type": "number",
+      "default": 80,
+      "min": 30,
+      "max": 200,
+      "label": "Heart width",
+      "unit": "mm",
+      "group": "Dimensions",
+      "help": "Width of the heart."
+    },
+    "heart_h": {
+      "type": "number",
+      "default": 80,
+      "min": 30,
+      "max": 200,
+      "label": "Heart height",
+      "unit": "mm",
+      "group": "Dimensions",
+      "help": "Height of the heart."
+    },
+    "frame_width": {
+      "type": "number",
+      "default": 4,
+      "min": 1,
+      "max": 15,
+      "label": "Frame width",
+      "unit": "mm",
+      "group": "Dimensions",
+      "help": "Solid border around the photo. Also what you hold, so don't go below ~3 mm."
+    },
+    "min_thickness": {
+      "type": "number",
+      "default": 0.8,
+      "min": 0.4,
+      "max": 1.5,
+      "label": "Thinnest layer",
+      "unit": "mm",
+      "group": "Advanced",
+      "help": "Where the photo is brightest. Thinner = brighter, but below ~0.8 mm it gets fragile."
+    },
+    "max_thickness": {
+      "type": "number",
+      "default": 3.0,
+      "min": 1.5,
+      "max": 5.0,
+      "label": "Thickest layer",
+      "unit": "mm",
+      "group": "Advanced",
+      "help": "Where the photo is darkest. Thicker = more contrast, but slower to print."
+    },
+    "base_height": {
+      "type": "number",
+      "default": 1.2,
+      "min": 0.4,
+      "max": 3.0,
+      "label": "Base thickness",
+      "unit": "mm",
+      "group": "Advanced",
+      "help": "Solid backing behind the image. Keep at least 1 mm so the print is strong."
+    }
   }
 }

@@ -17,14 +17,16 @@
     "line1": {
       "type": "string",
       "default": "SHUNATHON OWENS",
-      "label": "Name",
-      "group": "Text"
+      "label": "Line 1",
+      "group": "Text",
+      "help": "The main line of text."
     },
     "line2": {
       "type": "string",
       "default": "",
-      "label": "Title (optional)",
-      "group": "Text"
+      "label": "Line 2",
+      "group": "Text",
+      "help": "A second line. Leave blank for one line."
     },
     "emboss": {
       "type": "integer",
@@ -33,34 +35,37 @@
       "max": 1,
       "label": "Raised text",
       "group": "Style",
-      "help": "1 = raised (embossed) text, 0 = engraved."
+      "help": "1 = text sticks out of the surface, 0 = text is cut into it. Raised text is easier to print and to colour differently."
     },
     "w": {
       "type": "number",
       "default": 150,
       "min": 80,
       "max": 250,
-      "label": "Length",
+      "label": "Width",
       "unit": "mm",
-      "group": "Dimensions"
+      "group": "Dimensions",
+      "help": "Overall width."
     },
     "sign_h": {
       "type": "number",
       "default": 40,
       "min": 25,
       "max": 80,
-      "label": "Height",
+      "label": "Sign height",
       "unit": "mm",
-      "group": "Dimensions"
+      "group": "Dimensions",
+      "help": "How tall the sign stands."
     },
     "depth": {
       "type": "number",
       "default": 34,
       "min": 20,
       "max": 60,
-      "label": "Base depth",
+      "label": "Depth",
       "unit": "mm",
-      "group": "Dimensions"
+      "group": "Dimensions",
+      "help": "Front-to-back depth of the base."
     },
     "face_h": {
       "type": "number",
@@ -76,7 +81,8 @@
       "max": 40,
       "label": "Max text size",
       "unit": "mm",
-      "group": "Text"
+      "group": "Text",
+      "help": "Cap on letter height. Text is shrunk automatically if it doesn't fit, so this is a maximum, not a fixed size."
     },
     "line_gap": {
       "type": "number",
@@ -85,17 +91,20 @@
       "max": 30,
       "label": "Line spacing",
       "unit": "mm",
-      "group": "Text"
+      "group": "Text",
+      "help": "Vertical gap between lines. Reduced automatically if the lines won't fit."
     },
     "text_height": {
       "type": "number",
       "default": 1.5,
       "min": 0.6,
       "max": 3,
-      "label": "Text emboss height",
+      "label": "Text height",
       "unit": "mm",
-      "group": "Style"
+      "group": "Style",
+      "help": "How far the letters stick out (or how deep they're cut). About 1 mm is plenty."
     }
   },
-  "multipart": true
+  "multipart": true,
+  "thumb_yaw": 145.0
 }

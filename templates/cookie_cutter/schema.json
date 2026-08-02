@@ -6,18 +6,68 @@
   "icon": "🍪",
   "description": "Heart, star, circle, or hexagon cutter with a sharp edge and press flange.",
   "params": {
-    "shape": { "type": "string", "default": "heart",
-               "options": ["heart", "star", "circle", "hexagon"],
-               "label": "Shape", "group": "Style" },
-    "size": { "type": "number", "default": 70, "min": 30, "max": 140,
-              "label": "Size", "unit": "mm", "group": "Dimensions" },
-    "cut_h": { "type": "number", "default": 12, "min": 8, "max": 25,
-               "label": "Cutting depth", "unit": "mm", "group": "Dimensions" },
-    "cut_wall": { "type": "number", "default": 0.8, "min": 0.4, "max": 1.6,
-                  "label": "Cutting edge thickness", "unit": "mm", "group": "Advanced" },
-    "flange_w": { "type": "number", "default": 4, "min": 2, "max": 8,
-                  "label": "Press flange width", "unit": "mm", "group": "Advanced" },
-    "flange_h": { "type": "number", "default": 3, "min": 2, "max": 6,
-                  "label": "Press flange height", "unit": "mm", "group": "Advanced" }
+    "shape": {
+      "type": "string",
+      "default": "heart",
+      "options": [
+        "heart",
+        "star",
+        "circle",
+        "hexagon"
+      ],
+      "label": "Shape",
+      "group": "Style",
+      "help": "The outline of the design."
+    },
+    "size": {
+      "type": "number",
+      "default": 70,
+      "min": 30,
+      "max": 140,
+      "label": "Size",
+      "unit": "mm",
+      "group": "Dimensions",
+      "help": "Overall size across."
+    },
+    "cut_h": {
+      "type": "number",
+      "default": 12,
+      "min": 8,
+      "max": 25,
+      "label": "Cutting depth",
+      "unit": "mm",
+      "group": "Dimensions",
+      "help": "How deep it cuts — should exceed your dough thickness."
+    },
+    "cut_wall": {
+      "type": "number",
+      "default": 0.8,
+      "min": 0.4,
+      "max": 1.6,
+      "label": "Cutting edge thickness",
+      "unit": "mm",
+      "group": "Advanced",
+      "help": "Thinner cuts more cleanly but is more fragile. 0.8 mm is a good balance."
+    },
+    "flange_w": {
+      "type": "number",
+      "default": 4,
+      "min": 2,
+      "max": 8,
+      "label": "Press flange width",
+      "unit": "mm",
+      "group": "Advanced",
+      "help": "The wide rim you push down on."
+    },
+    "flange_h": {
+      "type": "number",
+      "default": 3,
+      "min": 2,
+      "max": 6,
+      "label": "Press flange height",
+      "unit": "mm",
+      "group": "Advanced",
+      "help": "How tall the pressing rim is."
+    }
   }
 }

@@ -9,26 +9,114 @@
   "description": "Scannable raised-QR plaque from any URL or text — WiFi cards, menus, links.",
   "color_swap_z": "base_height",
   "params": {
-    "photo_path": { "type": "string", "default": "", "hidden": true },
-    "photo_cols": { "type": "integer", "default": 200, "min": 50, "max": 2048, "hidden": true },
-    "photo_rows": { "type": "integer", "default": 200, "min": 50, "max": 2048, "hidden": true },
-    "plate_w": { "type": "number", "default": 80, "min": 40, "max": 160, "hidden": true },
-    "plate_h": { "type": "number", "default": 80, "min": 40, "max": 160, "hidden": true },
-    "qr_text": { "type": "string", "default": "https://example.com",
-                 "label": "URL or text", "group": "Text",
-                 "help": "What the QR code should open or say when scanned." },
-    "size": { "type": "number", "default": 80, "min": 40, "max": 160,
-              "label": "Plate size", "unit": "mm", "group": "Dimensions",
-              "help": "The plaque is square so the code stays scannable." },
-    "frame_width": { "type": "number", "default": 3, "min": 1, "max": 10,
-                     "label": "Border width", "unit": "mm", "group": "Dimensions" },
-    "corner_r": { "type": "number", "default": 3, "min": 0, "max": 12,
-                  "label": "Corner radius", "unit": "mm", "group": "Dimensions" },
-    "base_height": { "type": "number", "default": 3, "min": 2, "max": 6,
-                     "label": "Plate thickness", "unit": "mm", "group": "Dimensions" },
-    "max_thickness": { "type": "number", "default": 0.6, "min": 0.4, "max": 2.0,
-                       "label": "QR relief height", "unit": "mm", "group": "Style",
-                       "help": "How far the modules stand above the plate. Pause at the plate top and swap filament for a high-contrast, scannable code." },
-    "min_thickness": { "type": "number", "default": 0.01, "min": 0.01, "max": 0.01, "hidden": true }
+    "photo_path": {
+      "type": "string",
+      "default": "",
+      "hidden": true
+    },
+    "photo_cols": {
+      "type": "integer",
+      "default": 200,
+      "min": 50,
+      "max": 2048,
+      "hidden": true
+    },
+    "photo_rows": {
+      "type": "integer",
+      "default": 200,
+      "min": 50,
+      "max": 2048,
+      "hidden": true
+    },
+    "plate_w": {
+      "type": "number",
+      "default": 80,
+      "min": 40,
+      "max": 160,
+      "hidden": true,
+      "label": "Plate width",
+      "group": "Dimensions",
+      "help": "Width of the backing plate.",
+      "unit": "mm"
+    },
+    "plate_h": {
+      "type": "number",
+      "default": 80,
+      "min": 40,
+      "max": 160,
+      "hidden": true,
+      "label": "Plate height",
+      "group": "Dimensions",
+      "help": "Height of the backing plate.",
+      "unit": "mm"
+    },
+    "qr_text": {
+      "type": "string",
+      "default": "https://example.com",
+      "label": "URL or text",
+      "group": "Text",
+      "help": "What the QR code opens or says when scanned."
+    },
+    "size": {
+      "type": "number",
+      "default": 80,
+      "min": 40,
+      "max": 160,
+      "label": "Size",
+      "unit": "mm",
+      "group": "Dimensions",
+      "help": "Overall size across."
+    },
+    "frame_width": {
+      "type": "number",
+      "default": 3,
+      "min": 1,
+      "max": 10,
+      "label": "Frame width",
+      "unit": "mm",
+      "group": "Dimensions",
+      "help": "Solid border around the photo. Also what you hold, so don't go below ~3 mm."
+    },
+    "corner_r": {
+      "type": "number",
+      "default": 3,
+      "min": 0,
+      "max": 12,
+      "label": "Corner rounding",
+      "unit": "mm",
+      "group": "Dimensions",
+      "help": "How rounded the corners are. 0 gives sharp corners."
+    },
+    "base_height": {
+      "type": "number",
+      "default": 3,
+      "min": 2,
+      "max": 6,
+      "label": "Base thickness",
+      "unit": "mm",
+      "group": "Advanced",
+      "help": "Solid backing behind the image. Keep at least 1 mm so the print is strong."
+    },
+    "max_thickness": {
+      "type": "number",
+      "default": 0.6,
+      "min": 0.4,
+      "max": 2.0,
+      "label": "Thickest layer",
+      "unit": "mm",
+      "group": "Advanced",
+      "help": "Where the photo is darkest. Thicker = more contrast, but slower to print."
+    },
+    "min_thickness": {
+      "type": "number",
+      "default": 0.01,
+      "min": 0.01,
+      "max": 0.01,
+      "hidden": true,
+      "label": "Thinnest layer",
+      "group": "Advanced",
+      "help": "Where the photo is brightest. Thinner = brighter, but below ~0.8 mm it gets fragile.",
+      "unit": "mm"
+    }
   }
 }

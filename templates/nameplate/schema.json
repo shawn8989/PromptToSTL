@@ -15,19 +15,22 @@
       "type": "string",
       "default": "SHUNATHON",
       "label": "Line 1",
-      "group": "Text"
+      "group": "Text",
+      "help": "The main line of text."
     },
     "line2": {
       "type": "string",
       "default": "OWENS",
-      "label": "Line 2 (optional)",
-      "group": "Text"
+      "label": "Line 2",
+      "group": "Text",
+      "help": "A second line. Leave blank for one line."
     },
     "line3": {
       "type": "string",
       "default": "",
-      "label": "Line 3 (optional)",
-      "group": "Text"
+      "label": "Line 3",
+      "group": "Text",
+      "help": "A third line. Leave blank to skip it."
     },
     "emboss": {
       "type": "integer",
@@ -36,7 +39,7 @@
       "max": 1,
       "label": "Raised text",
       "group": "Style",
-      "help": "1 = raised (embossed) text, 0 = engraved."
+      "help": "1 = text sticks out of the surface, 0 = text is cut into it. Raised text is easier to print and to colour differently."
     },
     "w": {
       "type": "number",
@@ -45,7 +48,8 @@
       "max": 220,
       "label": "Width",
       "unit": "mm",
-      "group": "Dimensions"
+      "group": "Dimensions",
+      "help": "Overall width."
     },
     "h": {
       "type": "number",
@@ -54,7 +58,8 @@
       "max": 100,
       "label": "Height",
       "unit": "mm",
-      "group": "Dimensions"
+      "group": "Dimensions",
+      "help": "Overall height."
     },
     "th": {
       "type": "number",
@@ -63,16 +68,18 @@
       "max": 12,
       "label": "Thickness",
       "unit": "mm",
-      "group": "Dimensions"
+      "group": "Dimensions",
+      "help": "How thick the plate is. 3–4 mm is sturdy for a tag or keychain."
     },
     "corner_r": {
       "type": "number",
       "default": 5,
       "min": 0,
       "max": 25,
-      "label": "Corner radius",
+      "label": "Corner rounding",
       "unit": "mm",
-      "group": "Dimensions"
+      "group": "Dimensions",
+      "help": "How rounded the corners are. 0 gives sharp corners."
     },
     "text_size": {
       "type": "number",
@@ -81,34 +88,38 @@
       "max": 50,
       "label": "Max text size",
       "unit": "mm",
-      "group": "Text"
+      "group": "Text",
+      "help": "Cap on letter height. Text is shrunk automatically if it doesn't fit, so this is a maximum, not a fixed size."
     },
     "text_height": {
       "type": "number",
       "default": 1.2,
       "min": 0.6,
       "max": 4,
-      "label": "Text emboss height",
+      "label": "Text height",
       "unit": "mm",
-      "group": "Style"
+      "group": "Style",
+      "help": "How far the letters stick out (or how deep they're cut). About 1 mm is plenty."
     },
     "pad_x": {
       "type": "number",
       "default": 8,
       "min": 2,
       "max": 40,
-      "label": "Horizontal padding",
+      "label": "Side padding",
       "unit": "mm",
-      "group": "Advanced"
+      "group": "Advanced",
+      "help": "Clear space left and right of the text."
     },
     "pad_y": {
       "type": "number",
       "default": 6,
       "min": 2,
       "max": 40,
-      "label": "Vertical padding",
+      "label": "Top/bottom padding",
       "unit": "mm",
-      "group": "Advanced"
+      "group": "Advanced",
+      "help": "Clear space above and below the text."
     },
     "line_gap": {
       "type": "number",
@@ -117,7 +128,8 @@
       "max": 25,
       "label": "Line spacing",
       "unit": "mm",
-      "group": "Text"
+      "group": "Text",
+      "help": "Vertical gap between lines. Reduced automatically if the lines won't fit."
     },
     "text_align": {
       "type": "string",
@@ -128,7 +140,8 @@
         "right"
       ],
       "label": "Text alignment",
-      "group": "Style"
+      "group": "Style",
+      "help": "Left, centred, or right."
     },
     "text_anchor_y": {
       "type": "string",
@@ -138,53 +151,67 @@
         "center",
         "bottom"
       ],
-      "label": "Vertical anchor",
-      "group": "Style"
+      "label": "Vertical position",
+      "group": "Style",
+      "help": "Whether the text block sits at the top, middle, or bottom of the plate."
     },
     "text_margin_x": {
       "type": "number",
       "default": 8,
       "min": 0,
-      "max": 50
+      "max": 50,
+      "label": "Safe margin (sides)",
+      "group": "Advanced",
+      "help": "Extra inset the text is kept inside horizontally.",
+      "unit": "mm"
     },
     "text_margin_y": {
       "type": "number",
       "default": 6,
       "min": 0,
-      "max": 50
+      "max": 50,
+      "label": "Safe margin (top/bottom)",
+      "group": "Advanced",
+      "help": "Extra inset the text is kept inside vertically.",
+      "unit": "mm"
     },
     "text_block_center_y": {
       "type": "number",
       "default": 0,
       "min": -50,
       "max": 50,
-      "label": "Text block Y offset",
+      "label": "Nudge text up/down",
       "unit": "mm",
-      "group": "Advanced"
+      "group": "Advanced",
+      "help": "Shift the whole text block vertically. 0 = centred."
     },
     "text_box_w": {
       "type": "number",
       "default": 84,
       "min": 0,
-      "max": 500
+      "max": 500,
+      "hidden": true
     },
     "text_box_h": {
       "type": "number",
       "default": 18,
       "min": 0,
-      "max": 500
+      "max": 500,
+      "hidden": true
     },
     "text_box_offset_x": {
       "type": "number",
       "default": 0,
       "min": -200,
-      "max": 200
+      "max": 200,
+      "hidden": true
     },
     "text_box_offset_y": {
       "type": "number",
       "default": 0,
       "min": -200,
-      "max": 200
+      "max": 200,
+      "hidden": true
     },
     "debug": {
       "type": "integer",
@@ -192,86 +219,129 @@
       "min": 0,
       "max": 1,
       "label": "Debug geometry",
-      "group": "Advanced"
+      "group": "Advanced",
+      "hidden": true
     },
     "emblem_snap": {
       "type": "string",
-      "default": "custom"
+      "default": "custom",
+      "label": "Emblem position",
+      "group": "Emblem",
+      "help": "Snap the emblem to a spot on the plate. Choose 'custom' to place it by hand with the X/Y values below."
     },
     "emblem_autocenter": {
       "type": "integer",
       "default": 1,
       "min": 0,
-      "max": 1
+      "max": 1,
+      "label": "Auto-centre emblem",
+      "group": "Emblem",
+      "help": "1 = centre it exactly when position is 'center'."
     },
     "emblem_enabled": {
       "type": "integer",
       "default": 0,
       "min": 0,
-      "max": 1
+      "max": 1,
+      "hidden": true
     },
     "emblem_path": {
       "type": "string",
-      "default": ""
+      "default": "",
+      "hidden": true
     },
     "emblem_scale": {
       "type": "number",
       "default": 0.25,
       "min": 0.05,
-      "max": 5
+      "max": 5,
+      "label": "Emblem size",
+      "group": "Emblem",
+      "help": "Scale factor for the uploaded SVG. 0.25 = quarter size."
     },
     "emblem_x": {
       "type": "number",
       "default": 0,
       "min": -100,
-      "max": 100
+      "max": 100,
+      "label": "Emblem X",
+      "group": "Emblem",
+      "help": "Left/right position. Only used when Emblem position is 'custom'.",
+      "unit": "mm"
     },
     "emblem_y": {
       "type": "number",
       "default": 0,
       "min": -100,
-      "max": 100
+      "max": 100,
+      "label": "Emblem Y",
+      "group": "Emblem",
+      "help": "Up/down position. Only used when Emblem position is 'custom'.",
+      "unit": "mm"
     },
     "emblem_rot": {
       "type": "number",
       "default": 0,
       "min": -180,
-      "max": 180
+      "max": 180,
+      "label": "Emblem rotation",
+      "group": "Emblem",
+      "help": "Turn the emblem.",
+      "unit": "°"
     },
     "emblem_mode": {
       "type": "integer",
       "default": 1,
       "min": 0,
-      "max": 1
+      "max": 1,
+      "label": "Raised emblem",
+      "group": "Emblem",
+      "help": "1 = emblem sticks out, 0 = it's cut into the surface."
     },
     "emblem_depth": {
       "type": "number",
       "default": 1.2,
       "min": 0.4,
-      "max": 4
+      "max": 4,
+      "label": "Emblem height",
+      "group": "Emblem",
+      "help": "How far the emblem stands out of (or cuts into) the surface.",
+      "unit": "mm"
     },
     "holes": {
       "type": "integer",
       "default": 0,
       "min": 0,
-      "max": 1
+      "max": 1,
+      "label": "Add mounting holes",
+      "group": "Style",
+      "help": "1 = add screw holes, 0 = none."
     },
     "hole_d": {
       "type": "number",
       "default": 4,
       "min": 2,
-      "max": 10
+      "max": 10,
+      "label": "Hole diameter",
+      "group": "Dimensions",
+      "help": "Size of the hole. ~4 mm suits a split ring or a screw.",
+      "unit": "mm"
     },
     "hole_offset": {
       "type": "number",
       "default": 12,
       "min": 6,
-      "max": 60
+      "max": 60,
+      "label": "Hole inset",
+      "group": "Advanced",
+      "help": "How far the holes sit in from the edge.",
+      "unit": "mm"
     }
   },
   "category": "Text & signs",
   "icon": "🪧",
   "description": "Desk or door nameplate — up to three lines, optional SVG emblem.",
   "color_swap_z": "th",
-  "multipart": true
+  "multipart": true,
+  "self_fitting_text": true
 }

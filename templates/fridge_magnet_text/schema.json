@@ -18,13 +18,15 @@
       "type": "string",
       "default": "GROCERIES",
       "label": "Line 1",
-      "group": "Text"
+      "group": "Text",
+      "help": "The main line of text."
     },
     "line2": {
       "type": "string",
       "default": "",
-      "label": "Line 2 (optional)",
-      "group": "Text"
+      "label": "Line 2",
+      "group": "Text",
+      "help": "A second line. Leave blank for one line."
     },
     "emboss": {
       "type": "integer",
@@ -33,7 +35,7 @@
       "max": 1,
       "label": "Raised text",
       "group": "Style",
-      "help": "1 = raised (embossed) text, 0 = engraved."
+      "help": "1 = text sticks out of the surface, 0 = text is cut into it. Raised text is easier to print and to colour differently."
     },
     "w": {
       "type": "number",
@@ -42,7 +44,8 @@
       "max": 140,
       "label": "Width",
       "unit": "mm",
-      "group": "Dimensions"
+      "group": "Dimensions",
+      "help": "Overall width."
     },
     "h": {
       "type": "number",
@@ -51,7 +54,8 @@
       "max": 70,
       "label": "Height",
       "unit": "mm",
-      "group": "Dimensions"
+      "group": "Dimensions",
+      "help": "Overall height."
     },
     "th": {
       "type": "number",
@@ -60,16 +64,18 @@
       "max": 8,
       "label": "Thickness",
       "unit": "mm",
-      "group": "Dimensions"
+      "group": "Dimensions",
+      "help": "How thick the plate is. 3–4 mm is sturdy for a tag or keychain."
     },
     "corner_r": {
       "type": "number",
       "default": 5,
       "min": 0,
       "max": 15,
-      "label": "Corner radius",
+      "label": "Corner rounding",
       "unit": "mm",
-      "group": "Dimensions"
+      "group": "Dimensions",
+      "help": "How rounded the corners are. 0 gives sharp corners."
     },
     "magnet_d": {
       "type": "number",
@@ -79,7 +85,7 @@
       "label": "Magnet diameter",
       "unit": "mm",
       "group": "Style",
-      "help": "Pocket diameter — add ~0.4 mm to the magnet size for a snug fit."
+      "help": "Pocket size — add ~0.4 mm to your magnet's size for a snug fit."
     },
     "magnet_depth": {
       "type": "number",
@@ -88,7 +94,8 @@
       "max": 5,
       "label": "Magnet pocket depth",
       "unit": "mm",
-      "group": "Style"
+      "group": "Style",
+      "help": "How deep the magnet sinks in. Slightly less than the magnet's thickness so it sits flush."
     },
     "magnet_count": {
       "type": "integer",
@@ -96,7 +103,8 @@
       "min": 1,
       "max": 3,
       "label": "Number of magnets",
-      "group": "Style"
+      "group": "Style",
+      "help": "More magnets hold heavier things."
     },
     "text_size": {
       "type": "number",
@@ -105,7 +113,8 @@
       "max": 40,
       "label": "Max text size",
       "unit": "mm",
-      "group": "Text"
+      "group": "Text",
+      "help": "Cap on letter height. Text is shrunk automatically if it doesn't fit, so this is a maximum, not a fixed size."
     },
     "line_gap": {
       "type": "number",
@@ -114,16 +123,18 @@
       "max": 24,
       "label": "Line spacing",
       "unit": "mm",
-      "group": "Text"
+      "group": "Text",
+      "help": "Vertical gap between lines. Reduced automatically if the lines won't fit."
     },
     "text_height": {
       "type": "number",
       "default": 1.2,
       "min": 0.6,
       "max": 3,
-      "label": "Text emboss height",
+      "label": "Text height",
       "unit": "mm",
-      "group": "Style"
+      "group": "Style",
+      "help": "How far the letters stick out (or how deep they're cut). About 1 mm is plenty."
     }
   },
   "multipart": true

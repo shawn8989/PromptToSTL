@@ -6,19 +6,62 @@
   "icon": "🏺",
   "description": "Twisted lobed vase — slice in vase/spiral mode for a fast, seamless print.",
   "params": {
-    "base_d": { "type": "number", "default": 70, "min": 40, "max": 150,
-                "label": "Base diameter", "unit": "mm", "group": "Dimensions" },
-    "vase_h": { "type": "number", "default": 140, "min": 60, "max": 250,
-                "label": "Height", "unit": "mm", "group": "Dimensions" },
-    "twist": { "type": "number", "default": 90, "min": 0, "max": 360,
-               "label": "Twist", "unit": "°", "group": "Style" },
-    "lobes": { "type": "integer", "default": 6, "min": 3, "max": 12,
-               "label": "Lobes", "group": "Style" },
-    "lobe_depth": { "type": "number", "default": 0.12, "min": 0.0, "max": 0.3,
-                    "label": "Lobe depth", "group": "Style",
-                    "help": "0 = smooth cylinder, 0.3 = deep flutes (fraction of radius)." },
-    "taper": { "type": "number", "default": 1.15, "min": 0.6, "max": 1.8,
-               "label": "Taper (top / bottom)", "group": "Style",
-               "help": ">1 flares outward toward the top, <1 narrows." }
+    "base_d": {
+      "type": "number",
+      "default": 70,
+      "min": 40,
+      "max": 150,
+      "label": "Base diameter",
+      "unit": "mm",
+      "group": "Dimensions",
+      "help": "Width across the bottom."
+    },
+    "vase_h": {
+      "type": "number",
+      "default": 140,
+      "min": 60,
+      "max": 250,
+      "label": "Height",
+      "unit": "mm",
+      "group": "Dimensions",
+      "help": "How tall the vase is."
+    },
+    "twist": {
+      "type": "number",
+      "default": 90,
+      "min": 0,
+      "max": 360,
+      "label": "Twist",
+      "unit": "°",
+      "group": "Style",
+      "help": "How far the profile rotates from bottom to top. 0 = no twist."
+    },
+    "lobes": {
+      "type": "integer",
+      "default": 6,
+      "min": 3,
+      "max": 12,
+      "label": "Number of lobes",
+      "group": "Style",
+      "help": "How many ridges run up the side."
+    },
+    "lobe_depth": {
+      "type": "number",
+      "default": 0.12,
+      "min": 0.0,
+      "max": 0.3,
+      "label": "Lobe depth",
+      "group": "Style",
+      "help": "How pronounced the ridges are. 0 = smooth cylinder."
+    },
+    "taper": {
+      "type": "number",
+      "default": 1.15,
+      "min": 0.6,
+      "max": 1.8,
+      "label": "Flare",
+      "group": "Style",
+      "help": "Top width relative to the base. Above 1 flares outward, below 1 narrows."
+    }
   }
 }

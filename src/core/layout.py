@@ -1,6 +1,99 @@
 from __future__ import annotations
 
-from typing import Iterable, List, Union
+import ast
+from typing import Any, Dict, Iterable, List, Union
+
+
+def eval_expr(value: Any, params: Dict[str, Any]) -> float:
+    """Evaluate a schema `text_box` arithmetic expression against params.
+
+    Supports + - * / and parameter names only — never eval()s arbitrary code.
+    Returns 0.0 for anything unparseable.
+    """
+    if isinstance(value, (int, float)):
+        return float(value)
+    if not isinstance(value, str):
+        return 0.0
+
+    def _eval(node):
+        if isinstance(node, ast.Expression):
+            return _eval(node.body)
+        if isinstance(node, ast.BinOp) and isinstance(node.op, (ast.Add, ast.Sub, ast.Mult, ast.Div)):
+            left, right = _eval(node.left), _eval(node.right)
+            if isinstance(node.op, ast.Add):
+                return left + right
+            if isinstance(node.op, ast.Sub):
+                return left - right
+            if isinstance(node.op, ast.Mult):
+                return left * right
+            return left / right if right != 0 else 0.0
+        if isinstance(node, ast.UnaryOp) and isinstance(node.op, (ast.UAdd, ast.USub)):
+            val = _eval(node.operand)
+            return val if isinstance(node.op, ast.UAdd) else -val
+        if isinstance(node, ast.Name):
+            return float(params.get(node.id, 0.0))
+        if isinstance(node, ast.Constant) and isinstance(node.value, (int, float)):
+            return float(node.value)
+        return 0.0
+
+    try:
+        return float(_eval(ast.parse(value, mode="eval")))
+    except Exception:
+        return 0.0
+
+
+def apply_text_layout(schema: Dict[str, Any], params: Dict[str, Any],
+                      margin: float = 0.9) -> Dict[str, Any] | None:
+    """Auto-fit a template's text into its text_box, mutating `params`.
+
+    Mirrors what the app does before a build: shrinks text_size and wraps
+    lines so the text fits the plate. Returns the layout result, or None if
+    the template has no text_box.
+    """
+    text_box = schema.get("text_box") or {}
+    if not text_box or "text_size" not in params:
+        return None
+
+    params["offset_x"] = eval_expr(text_box.get("offset_x", 0), params)
+    params["offset_y"] = eval_expr(text_box.get("offset_y", 0), params)
+    box_w = eval_expr(text_box.get("box_w", 0), params)
+    box_h = eval_expr(text_box.get("box_h", 0), params)
+
+    if schema.get("self_fitting_text"):
+        # The .scad scales text to fit on its own; don't second-guess it.
+        return {
+            "lines": [params.get(k, "") for k in ("line1", "line2", "line3") if k in params],
+            "text_size": params.get("text_size"),
+            "offsets_y": [], "warning": "", "truncated": False,
+            "box_w": box_w, "box_h": box_h,
+        }
+
+    raw = [str(params.get(k, "")) for k in ("line1", "line2", "line3") if k in params]
+    if not raw and "text" in params:
+        raw = [str(params.get("text", ""))]
+
+    layout = layout_text(
+        raw,
+        max_lines=int(schema.get("max_lines", 1)),
+        box_w_mm=box_w,
+        box_h_mm=box_h,
+        max_text_size=float(params.get("text_size", 0)),
+        min_text_size=float(schema["params"].get("text_size", {}).get(
+            "min", params.get("text_size", 0))),
+        margin=margin,
+        line_gap_mm=float(params.get("line_gap", 0)),
+    )
+    params["text_size"] = layout["text_size"]
+    if "line_gap" in params and "line_gap_mm" in layout:
+        params["line_gap"] = layout["line_gap_mm"]
+    lines = layout["lines"] + ["", "", ""]
+    for i, key in enumerate(("line1", "line2", "line3")):
+        if key in params:
+            params[key] = lines[i]
+    # Expose the computed text area so callers (e.g. emblem snapping) don't
+    # need duplicate text_box_* params kept in sync by hand.
+    layout["box_w"], layout["box_h"] = box_w, box_h
+    return layout
 
 
 def layout_text(

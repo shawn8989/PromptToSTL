@@ -44,13 +44,17 @@ function text_anchor(align) =
     align == "left"  ? "left" :
     align == "right" ? "right" : "center";
 
+// Z-centered in both branches: spans -thick/2 .. +thick/2.
+// (The rounded branch used to start at z=0, which shifted the whole plate
+// up by thick/2 — burying the text and stopping the mounting holes from
+// cutting through.)
 module rounded_plate(pw, ph, r, thick) {
     if (r <= 0) {
         cube([pw, ph, thick], center = true);
     } else {
         hull() {
             for (dx = [-1, 1], dy = [-1, 1]) {
-                translate([dx * (pw/2 - r), dy * (ph/2 - r), 0])
+                translate([dx * (pw/2 - r), dy * (ph/2 - r), -thick/2])
                 cylinder(r = r, h = thick, $fn = 48);
             }
         }
@@ -60,10 +64,10 @@ module rounded_plate(pw, ph, r, thick) {
 module border_frame() {
     if (border_w > 0 && border_th > 0) {
         difference() {
-            translate([0, 0, th/2 + border_th/2])
+            translate([0, 0, th + border_th/2])
             rounded_plate(w, h, corner_r, border_th);
 
-            translate([0, 0, th/2 + border_th/2 - 0.01])
+            translate([0, 0, th + border_th/2 - 0.01])
             rounded_plate(w - 2*border_w, h - 2*border_w, inner_r, border_th + 0.02);
         }
     }

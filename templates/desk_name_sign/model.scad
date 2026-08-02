@@ -29,11 +29,17 @@ module wedge() {
 }
 
 // Places children flat on the slanted face (local XY = face plane,
-// local +Z = outward face normal)
+// local +Z = outward face normal).
+//
+// The extra Z-180 matters: tilting by -phi alone leaves the text's "up"
+// pointing DOWN the slope, so the lettering reads upside down to someone
+// standing in front of the sign. Flipping first puts local +Y up-slope and
+// local +X along the viewer's reading direction.
 module on_face() {
   translate([0, depth/2, sign_h/2])
     rotate([-phi, 0, 0])
-      children();
+      rotate([0, 0, 180])
+        children();
 }
 
 module line_text_3d(s, y) {

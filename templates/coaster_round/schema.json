@@ -15,13 +15,15 @@
       "type": "string",
       "default": "SO Techy",
       "label": "Line 1",
-      "group": "Text"
+      "group": "Text",
+      "help": "The main line of text."
     },
     "line2": {
       "type": "string",
       "default": "",
-      "label": "Line 2 (optional)",
-      "group": "Text"
+      "label": "Line 2",
+      "group": "Text",
+      "help": "A second line. Leave blank for one line."
     },
     "emboss": {
       "type": "integer",
@@ -30,7 +32,7 @@
       "max": 1,
       "label": "Raised text",
       "group": "Style",
-      "help": "1 = raised (embossed) text, 0 = engraved."
+      "help": "1 = text sticks out of the surface, 0 = text is cut into it. Raised text is easier to print and to colour differently."
     },
     "diameter": {
       "type": "number",
@@ -39,7 +41,8 @@
       "max": 150,
       "label": "Diameter",
       "unit": "mm",
-      "group": "Dimensions"
+      "group": "Dimensions",
+      "help": "Width across the circle."
     },
     "th": {
       "type": "number",
@@ -48,7 +51,8 @@
       "max": 10,
       "label": "Thickness",
       "unit": "mm",
-      "group": "Dimensions"
+      "group": "Dimensions",
+      "help": "How thick the plate is. 3–4 mm is sturdy for a tag or keychain."
     },
     "rim": {
       "type": "integer",
@@ -57,7 +61,7 @@
       "max": 1,
       "label": "Raised rim",
       "group": "Style",
-      "help": "1 = keep drips contained."
+      "help": "1 = add a lip around the edge to catch drips, 0 = flat."
     },
     "rim_w": {
       "type": "number",
@@ -66,7 +70,8 @@
       "max": 10,
       "label": "Rim width",
       "unit": "mm",
-      "group": "Advanced"
+      "group": "Advanced",
+      "help": "How wide the rim is."
     },
     "rim_h": {
       "type": "number",
@@ -75,7 +80,8 @@
       "max": 3,
       "label": "Rim height",
       "unit": "mm",
-      "group": "Advanced"
+      "group": "Advanced",
+      "help": "How far the rim stands up."
     },
     "text_size": {
       "type": "number",
@@ -84,7 +90,8 @@
       "max": 30,
       "label": "Max text size",
       "unit": "mm",
-      "group": "Text"
+      "group": "Text",
+      "help": "Cap on letter height. Text is shrunk automatically if it doesn't fit, so this is a maximum, not a fixed size."
     },
     "line_gap": {
       "type": "number",
@@ -93,105 +100,142 @@
       "max": 25,
       "label": "Line spacing",
       "unit": "mm",
-      "group": "Text"
+      "group": "Text",
+      "help": "Vertical gap between lines. Reduced automatically if the lines won't fit."
     },
     "text_box_w": {
       "type": "number",
       "default": 78,
       "min": 0,
-      "max": 500
+      "max": 500,
+      "hidden": true
     },
     "text_box_h": {
       "type": "number",
       "default": 78,
       "min": 0,
-      "max": 500
+      "max": 500,
+      "hidden": true
     },
     "text_box_offset_x": {
       "type": "number",
       "default": 0,
       "min": -200,
-      "max": 200
+      "max": 200,
+      "hidden": true
     },
     "text_box_offset_y": {
       "type": "number",
       "default": 0,
       "min": -200,
-      "max": 200
+      "max": 200,
+      "hidden": true
     },
     "emblem_snap": {
       "type": "string",
-      "default": "custom"
+      "default": "custom",
+      "label": "Emblem position",
+      "group": "Emblem",
+      "help": "Snap the emblem to a spot on the plate. Choose 'custom' to place it by hand with the X/Y values below."
     },
     "emblem_autocenter": {
       "type": "integer",
       "default": 1,
       "min": 0,
-      "max": 1
+      "max": 1,
+      "label": "Auto-centre emblem",
+      "group": "Emblem",
+      "help": "1 = centre it exactly when position is 'center'."
     },
     "emblem_enabled": {
       "type": "integer",
       "default": 0,
       "min": 0,
-      "max": 1
+      "max": 1,
+      "hidden": true
     },
     "emblem_path": {
       "type": "string",
-      "default": ""
+      "default": "",
+      "hidden": true
     },
     "emblem_scale": {
       "type": "number",
       "default": 0.25,
       "min": 0.05,
-      "max": 5
+      "max": 5,
+      "label": "Emblem size",
+      "group": "Emblem",
+      "help": "Scale factor for the uploaded SVG. 0.25 = quarter size."
     },
     "emblem_x": {
       "type": "number",
       "default": 0,
       "min": -100,
-      "max": 100
+      "max": 100,
+      "label": "Emblem X",
+      "group": "Emblem",
+      "help": "Left/right position. Only used when Emblem position is 'custom'.",
+      "unit": "mm"
     },
     "emblem_y": {
       "type": "number",
       "default": 0,
       "min": -100,
-      "max": 100
+      "max": 100,
+      "label": "Emblem Y",
+      "group": "Emblem",
+      "help": "Up/down position. Only used when Emblem position is 'custom'.",
+      "unit": "mm"
     },
     "emblem_rot": {
       "type": "number",
       "default": 0,
       "min": -180,
-      "max": 180
+      "max": 180,
+      "label": "Emblem rotation",
+      "group": "Emblem",
+      "help": "Turn the emblem.",
+      "unit": "°"
     },
     "emblem_mode": {
       "type": "integer",
       "default": 1,
       "min": 0,
-      "max": 1
+      "max": 1,
+      "label": "Raised emblem",
+      "group": "Emblem",
+      "help": "1 = emblem sticks out, 0 = it's cut into the surface."
     },
     "emblem_depth": {
       "type": "number",
       "default": 1.2,
       "min": 0.4,
-      "max": 4
+      "max": 4,
+      "label": "Emblem height",
+      "group": "Emblem",
+      "help": "How far the emblem stands out of (or cuts into) the surface.",
+      "unit": "mm"
     },
     "text_height": {
       "type": "number",
       "default": 1.0,
       "min": 0.6,
       "max": 3,
-      "label": "Text emboss height",
+      "label": "Text height",
       "unit": "mm",
-      "group": "Style"
+      "group": "Style",
+      "help": "How far the letters stick out (or how deep they're cut). About 1 mm is plenty."
     },
     "pad": {
       "type": "number",
       "default": 6,
       "min": 2,
       "max": 20,
-      "label": "Text padding",
+      "label": "Edge padding",
       "unit": "mm",
-      "group": "Advanced"
+      "group": "Advanced",
+      "help": "Space kept clear around the text."
     }
   },
   "category": "Home & office",

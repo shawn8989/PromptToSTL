@@ -14,97 +14,161 @@
       "type": "number",
       "default": 120,
       "min": 40,
-      "max": 300
+      "max": 300,
+      "label": "Width",
+      "group": "Dimensions",
+      "help": "Overall width.",
+      "unit": "mm"
     },
     "h": {
       "type": "number",
       "default": 60,
       "min": 20,
-      "max": 200
+      "max": 200,
+      "label": "Height",
+      "group": "Dimensions",
+      "help": "Overall height.",
+      "unit": "mm"
     },
     "th": {
       "type": "number",
       "default": 5.0,
       "min": 2.0,
-      "max": 15.0
+      "max": 15.0,
+      "label": "Thickness",
+      "group": "Dimensions",
+      "help": "How thick the plate is. 3–4 mm is sturdy for a tag or keychain.",
+      "unit": "mm"
     },
     "border_w": {
       "type": "number",
       "default": 5.0,
       "min": 0.0,
-      "max": 20.0
+      "max": 20.0,
+      "label": "Border width",
+      "group": "Dimensions",
+      "help": "Width of the raised frame around the edge.",
+      "unit": "mm"
     },
     "border_th": {
       "type": "number",
       "default": 1.5,
       "min": 0.0,
-      "max": 5.0
+      "max": 5.0,
+      "label": "Border height",
+      "group": "Advanced",
+      "help": "How far the frame stands proud of the surface.",
+      "unit": "mm"
     },
     "corner_r": {
       "type": "number",
       "default": 6.0,
       "min": 0.0,
-      "max": 30.0
+      "max": 30.0,
+      "label": "Corner rounding",
+      "group": "Dimensions",
+      "help": "How rounded the corners are. 0 gives sharp corners.",
+      "unit": "mm"
     },
     "mount_holes": {
       "type": "integer",
       "default": 1,
       "min": 0,
-      "max": 1
+      "max": 1,
+      "label": "Add mounting holes",
+      "group": "Style",
+      "help": "1 = add holes for wall screws, 0 = none."
     },
     "hole_d": {
       "type": "number",
       "default": 4.5,
       "min": 2.0,
-      "max": 10.0
+      "max": 10.0,
+      "label": "Hole diameter",
+      "group": "Dimensions",
+      "help": "Size of the hole. ~4 mm suits a split ring or a screw.",
+      "unit": "mm"
     },
     "hole_margin": {
       "type": "number",
       "default": 8.0,
       "min": 4.0,
-      "max": 20.0
+      "max": 20.0,
+      "label": "Hole inset",
+      "group": "Advanced",
+      "help": "How far the mounting holes sit in from the edge.",
+      "unit": "mm"
     },
     "line1": {
       "type": "string",
-      "default": "YOUR NAME"
+      "default": "YOUR NAME",
+      "label": "Line 1",
+      "group": "Text",
+      "help": "The main line of text."
     },
     "line2": {
       "type": "string",
-      "default": ""
+      "default": "",
+      "label": "Line 2",
+      "group": "Text",
+      "help": "A second line. Leave blank for one line."
     },
     "line3": {
       "type": "string",
-      "default": ""
+      "default": "",
+      "label": "Line 3",
+      "group": "Text",
+      "help": "A third line. Leave blank to skip it."
     },
     "text_size": {
       "type": "number",
       "default": 14,
       "min": 6,
-      "max": 50
+      "max": 50,
+      "label": "Max text size",
+      "group": "Text",
+      "help": "Cap on letter height. Text is shrunk automatically if it doesn't fit, so this is a maximum, not a fixed size.",
+      "unit": "mm"
     },
     "text_height": {
       "type": "number",
       "default": 1.2,
       "min": 0.4,
-      "max": 4.0
+      "max": 4.0,
+      "label": "Text height",
+      "group": "Style",
+      "help": "How far the letters stick out (or how deep they're cut). About 1 mm is plenty.",
+      "unit": "mm"
     },
     "line_gap": {
       "type": "number",
       "default": 9,
       "min": 4,
-      "max": 30
+      "max": 30,
+      "label": "Line spacing",
+      "group": "Text",
+      "help": "Vertical gap between lines. Reduced automatically if the lines won't fit.",
+      "unit": "mm"
     },
     "pad_x": {
       "type": "number",
       "default": 6,
       "min": 2,
-      "max": 40
+      "max": 40,
+      "label": "Side padding",
+      "group": "Advanced",
+      "help": "Clear space left and right of the text.",
+      "unit": "mm"
     },
     "pad_y": {
       "type": "number",
       "default": 5,
       "min": 2,
-      "max": 40
+      "max": 40,
+      "label": "Top/bottom padding",
+      "group": "Advanced",
+      "help": "Clear space above and below the text.",
+      "unit": "mm"
     },
     "text_align": {
       "type": "string",
@@ -113,13 +177,19 @@
         "left",
         "center",
         "right"
-      ]
+      ],
+      "label": "Text alignment",
+      "group": "Style",
+      "help": "Left, centred, or right."
     },
     "emboss": {
       "type": "integer",
       "default": 1,
       "min": 0,
-      "max": 1
+      "max": 1,
+      "label": "Raised text",
+      "group": "Style",
+      "help": "1 = text sticks out of the surface, 0 = text is cut into it. Raised text is easier to print and to colour differently."
     },
     "offset_x": {
       "type": "number",
@@ -184,50 +254,78 @@
       "type": "number",
       "default": 0.25,
       "min": 0.05,
-      "max": 5
+      "max": 5,
+      "label": "Emblem size",
+      "group": "Emblem",
+      "help": "Scale factor for the uploaded SVG. 0.25 = quarter size."
     },
     "emblem_x": {
       "type": "number",
       "default": 0,
       "min": -150,
-      "max": 150
+      "max": 150,
+      "label": "Emblem X",
+      "group": "Emblem",
+      "help": "Left/right position. Only used when Emblem position is 'custom'.",
+      "unit": "mm"
     },
     "emblem_y": {
       "type": "number",
       "default": 0,
       "min": -100,
-      "max": 100
+      "max": 100,
+      "label": "Emblem Y",
+      "group": "Emblem",
+      "help": "Up/down position. Only used when Emblem position is 'custom'.",
+      "unit": "mm"
     },
     "emblem_rot": {
       "type": "number",
       "default": 0,
       "min": -180,
-      "max": 180
+      "max": 180,
+      "label": "Emblem rotation",
+      "group": "Emblem",
+      "help": "Turn the emblem.",
+      "unit": "°"
     },
     "emblem_mode": {
       "type": "integer",
       "default": 1,
       "min": 0,
       "max": 1,
-      "hidden": true
+      "hidden": true,
+      "label": "Raised emblem",
+      "group": "Emblem",
+      "help": "1 = emblem sticks out, 0 = it's cut into the surface."
     },
     "emblem_depth": {
       "type": "number",
       "default": 1.2,
       "min": 0.4,
-      "max": 4
+      "max": 4,
+      "label": "Emblem height",
+      "group": "Emblem",
+      "help": "How far the emblem stands out of (or cuts into) the surface.",
+      "unit": "mm"
     },
     "emblem_snap": {
       "type": "string",
       "default": "custom",
-      "hidden": true
+      "hidden": true,
+      "label": "Emblem position",
+      "group": "Emblem",
+      "help": "Snap the emblem to a spot on the plate. Choose 'custom' to place it by hand with the X/Y values below."
     },
     "emblem_autocenter": {
       "type": "integer",
       "default": 1,
       "min": 0,
       "max": 1,
-      "hidden": true
+      "hidden": true,
+      "label": "Auto-centre emblem",
+      "group": "Emblem",
+      "help": "1 = centre it exactly when position is 'center'."
     },
     "emblem_invert": {
       "type": "integer",

@@ -1,4 +1,3 @@
-import ast
 import json
 import os
 import shutil
@@ -14,7 +13,7 @@ from dotenv import load_dotenv
 
 from src.core.catalog import list_templates, load_template
 from src.core.image_prep import prepare_lithophane_image
-from src.core.layout import layout_text
+from src.core.layout import apply_text_layout, eval_expr
 from src.core.litho_mesh import build_litho_mesh
 from src.core.qr import make_qr_png
 from src.core.runner import run_openscad, supports_manifold
@@ -38,7 +37,8 @@ except Exception:
 
 
 OUT_DIR = Path(__file__).resolve().parent / "out"
-PLACEHOLDER_STL = Path(__file__).resolve().parent / "templates" / "placeholder.stl"
+TEMPLATES_DIR = Path(__file__).resolve().parent / "templates"
+PLACEHOLDER_STL = TEMPLATES_DIR / "placeholder.stl"
 TEXT_MARGIN = 0.9
 MAX_KEPT_JOBS = 20   # cloud hosts have small ephemeral disks
 
@@ -62,42 +62,6 @@ def prune_jobs(keep: int = MAX_KEPT_JOBS) -> None:
     jobs = [d for d in OUT_DIR.iterdir() if d.is_dir() and not d.name.startswith(".")]
     for stale in sorted(jobs, key=lambda d: d.stat().st_mtime, reverse=True)[keep:]:
         shutil.rmtree(stale, ignore_errors=True)
-
-
-def eval_expr(value, params):
-    if isinstance(value, (int, float)):
-        return float(value)
-    if not isinstance(value, str):
-        return 0.0
-
-    def _eval(node):
-        if isinstance(node, ast.Expression):
-            return _eval(node.body)
-        if isinstance(node, ast.BinOp) and isinstance(node.op, (ast.Add, ast.Sub, ast.Mult, ast.Div)):
-            left = _eval(node.left)
-            right = _eval(node.right)
-            if isinstance(node.op, ast.Add):
-                return left + right
-            if isinstance(node.op, ast.Sub):
-                return left - right
-            if isinstance(node.op, ast.Mult):
-                return left * right
-            if isinstance(node.op, ast.Div):
-                return left / right if right != 0 else 0.0
-        if isinstance(node, ast.UnaryOp) and isinstance(node.op, (ast.UAdd, ast.USub)):
-            val = _eval(node.operand)
-            return val if isinstance(node.op, ast.UAdd) else -val
-        if isinstance(node, ast.Name):
-            return float(params.get(node.id, 0.0))
-        if isinstance(node, ast.Constant) and isinstance(node.value, (int, float)):
-            return float(node.value)
-        return 0.0
-
-    try:
-        parsed = ast.parse(value, mode="eval")
-        return float(_eval(parsed))
-    except Exception:
-        return 0.0
 
 
 def detect_openscad() -> str:
@@ -151,6 +115,18 @@ def load_jobs(limit: int = 8) -> list[dict]:
 
 
 st.set_page_config(page_title="PromptToSTL", page_icon="🧱", layout="wide")
+
+# Cap thumbnail size as a backstop and tighten card padding, so the gallery
+# stays compact when Streamlit stacks the columns on a phone.
+st.markdown(
+    """
+    <style>
+      [data-testid="stImage"] img { max-height: 150px; object-fit: contain; }
+      [data-testid="stVerticalBlockBorderWrapper"] { padding-bottom: .25rem; }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
 
 if "preview_nonce" not in st.session_state:
     st.session_state["preview_nonce"] = 0
@@ -406,10 +382,27 @@ with colL:
 
     if st.session_state["show_gallery"]:
         st.subheader("1 · Choose a design")
+        query = st.text_input(
+            "Search designs", placeholder=f"Search {len(templates)} designs — try 'photo', 'tag', 'gift'…",
+            label_visibility="collapsed",
+        ).strip().lower()
+
+        def _matches(tid: str) -> bool:
+            if not query:
+                return True
+            s = schemas[tid]
+            hay = " ".join([tid, s.get("label", ""), s.get("description", ""),
+                            s.get("category", "")]).lower()
+            return all(word in hay for word in query.split())
+
         by_cat: dict[str, list] = {}
         for tid in templates:
+            if not _matches(tid):
+                continue
             s = schemas[tid]
             by_cat.setdefault(s.get("category", "More"), []).append(tid)
+        if not by_cat:
+            st.info(f"No designs match “{query}”.")
         for cat in sorted(by_cat):
             st.markdown(f"**{cat}**")
             items = by_cat[cat]
@@ -419,12 +412,19 @@ with colL:
                     s = schemas[tid]
                     selected = tid == template_id
                     with col, st.container(border=True):
-                        st.markdown(
-                            f"<div style='font-size:2rem;line-height:1'>"
-                            f"{s.get('icon', '📦')}</div>",
-                            unsafe_allow_html=True,
-                        )
-                        st.markdown(f"**{s.get('label', tid)}**")
+                        thumb = TEMPLATES_DIR / tid / "thumb.png"
+                        if thumb.exists():
+                            # Fixed pixel width, not container width: Streamlit
+                            # stacks columns on phones, and a full-width thumb
+                            # would make each card fill the screen.
+                            st.image(str(thumb), width=150)
+                        else:
+                            st.markdown(
+                                f"<div style='font-size:2rem;line-height:1'>"
+                                f"{s.get('icon', '📦')}</div>",
+                                unsafe_allow_html=True,
+                            )
+                        st.markdown(f"{s.get('icon', '')} **{s.get('label', tid)}**")
                         st.caption(s.get("description", ""))
                         if st.button(
                             "✓ Selected" if selected else "Select",
@@ -596,71 +596,22 @@ with colL:
         st.markdown("**Emblem**")
         uploaded_svg = st.file_uploader("SVG emblem", type=["svg"])
 
-    # ── Text layout ──────────────────────────────────────────────────────
-    layout_debug = None
-    text_box = schema.get("text_box") or {}
-    if text_box and "text_size" in params:
-        max_text_size = float(params.get("text_size", 0))
-        min_text_size = float(schema["params"].get("text_size", {}).get("min", max_text_size))
-        max_lines = int(schema.get("max_lines", 1))
-        box_w = eval_expr(text_box.get("box_w", 0), params)
-        box_h = eval_expr(text_box.get("box_h", 0), params)
-        offset_x = eval_expr(text_box.get("offset_x", 0), params)
-        offset_y = eval_expr(text_box.get("offset_y", 0), params)
-
-        params["offset_x"] = offset_x
-        params["offset_y"] = offset_y
-
-        if template_id == "nameplate":
-            layout_debug = {
-                "lines": [params.get("line1", ""), params.get("line2", ""), params.get("line3", "")],
-                "text_size": params.get("text_size"),
-                "offsets_y": [],
-                "warning": "",
-                "truncated": False,
-            }
-        else:
-            raw_lines = []
-            for key in ("line1", "line2", "line3"):
-                if key in params:
-                    raw_lines.append(str(params.get(key, "")))
-            if not raw_lines and "text" in params:
-                raw_lines = [str(params.get("text", ""))]
-
-            line_gap = float(params.get("line_gap", 0))
-            layout = layout_text(
-                raw_lines,
-                max_lines=max_lines,
-                box_w_mm=box_w,
-                box_h_mm=box_h,
-                max_text_size=max_text_size,
-                min_text_size=min_text_size,
-                margin=TEXT_MARGIN,
-                line_gap_mm=line_gap,
-            )
-            layout_debug = layout
-
-            params["text_size"] = layout["text_size"]
-            if "line_gap" in params and "line_gap_mm" in layout:
-                params["line_gap"] = layout["line_gap_mm"]
-
-            lines = layout["lines"] + ["", "", ""]
-            if "line1" in params:
-                params["line1"] = lines[0]
-            if "line2" in params:
-                params["line2"] = lines[1]
-            if "line3" in params:
-                params["line3"] = lines[2]
-
-            if layout.get("warning"):
-                st.warning(layout["warning"])
-            elif layout.get("truncated"):
-                st.warning("Text was truncated to fit the text box.")
+    # ── Text layout (shared with scripts/render_thumbnails.py) ───────────
+    layout_debug = apply_text_layout(schema, params, margin=TEXT_MARGIN)
+    if layout_debug:
+        if layout_debug.get("warning"):
+            st.warning(layout_debug["warning"])
+        elif layout_debug.get("truncated"):
+            st.warning("Text was truncated to fit the text box.")
 
     emblem_snap = params.get("emblem_snap") if isinstance(params.get("emblem_snap"), str) else None
     if emblem_snap and emblem_snap != "custom":
-        box_w = float(params.get("text_box_w", 0.0))
-        box_h = float(params.get("text_box_h", 0.0))
+        # Use the text area computed from the schema's text_box expressions.
+        # (Older schemas duplicated this as text_box_* params the user had to
+        # keep in sync by hand; those are now hidden and only used as a
+        # fallback for templates without a text_box.)
+        box_w = float((layout_debug or {}).get("box_w") or params.get("text_box_w", 0.0))
+        box_h = float((layout_debug or {}).get("box_h") or params.get("text_box_h", 0.0))
         box_off_x = float(params.get("text_box_offset_x", 0.0))
         box_off_y = float(params.get("text_box_offset_y", 0.0))
         margin = min(box_w, box_h) * 0.1 if min(box_w, box_h) > 0 else 0.0
@@ -695,10 +646,10 @@ with colL:
 
     if layout_debug:
         with st.expander("Layout debug", expanded=False):
-            st.write(f"box_w: {box_w}")
-            st.write(f"box_h: {box_h}")
-            st.write(f"offset_x: {offset_x}")
-            st.write(f"offset_y: {offset_y}")
+            st.write(f"box_w: {layout_debug.get('box_w')}")
+            st.write(f"box_h: {layout_debug.get('box_h')}")
+            st.write(f"offset_x: {params.get('offset_x')}")
+            st.write(f"offset_y: {params.get('offset_y')}")
             st.write(f"text_size: {layout_debug.get('text_size')}")
             st.write(f"lines: {layout_debug.get('lines')}")
             st.write(f"offsets_y: {layout_debug.get('offsets_y')}")

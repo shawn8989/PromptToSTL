@@ -17,139 +17,224 @@
         "line",
         "ring",
         "frame"
-      ]
+      ],
+      "label": "Chain layout",
+      "group": "Style",
+      "help": "How the chain is arranged around the pendant."
     },
     "chain_links": {
       "type": "integer",
       "default": 54,
       "min": 4,
-      "max": 200
+      "max": 200,
+      "label": "Number of links",
+      "group": "Style",
+      "help": "Used when auto-fit links is off."
     },
     "chain_auto_links": {
       "type": "integer",
       "default": 1,
       "min": 0,
-      "max": 1
+      "max": 1,
+      "label": "Auto-fit links",
+      "group": "Style",
+      "help": "1 = work out the link count from the plate size."
     },
     "chain_spacing": {
       "type": "number",
       "default": 0,
       "min": -5,
-      "max": 20
+      "max": 20,
+      "label": "Link spacing",
+      "group": "Advanced",
+      "help": "Gap between links.",
+      "unit": "mm"
     },
     "chain_scale": {
       "type": "number",
       "default": 1,
       "min": 0.5,
-      "max": 2
+      "max": 2,
+      "label": "Chain scale",
+      "group": "Style",
+      "help": "Overall size of the links."
     },
     "ring_radius": {
       "type": "number",
       "default": 70,
       "min": 20,
-      "max": 200
+      "max": 200,
+      "label": "Ring radius",
+      "group": "Advanced",
+      "help": "Radius the chain follows when laid in a ring.",
+      "unit": "mm"
     },
     "frame_gap": {
       "type": "number",
       "default": 6,
       "min": -10,
-      "max": 40
+      "max": 40,
+      "label": "Frame gap",
+      "group": "Advanced",
+      "help": "Space between the chain and the plate edge.",
+      "unit": "mm"
     },
     "frame_corner_r": {
       "type": "number",
       "default": 18,
       "min": 0,
-      "max": 120
+      "max": 120,
+      "label": "Frame corner rounding",
+      "group": "Advanced",
+      "help": "Corner rounding of the path the chain follows.",
+      "unit": "mm"
     },
     "link_cut": {
       "type": "number",
       "default": 2.4,
       "min": 0,
-      "max": 10
+      "max": 10,
+      "label": "Link opening",
+      "group": "Advanced",
+      "help": "Size of the gap in each link.",
+      "unit": "mm"
     },
     "link_thickness": {
       "type": "number",
       "default": 5.2,
       "min": 1,
-      "max": 20
+      "max": 20,
+      "label": "Link thickness",
+      "group": "Advanced",
+      "help": "How thick each link is.",
+      "unit": "mm"
     },
     "link_xr": {
       "type": "number",
       "default": 7.4,
       "min": 2,
-      "max": 40
+      "max": 40,
+      "label": "Link width",
+      "group": "Advanced",
+      "help": "Half-width of a link.",
+      "unit": "mm"
     },
     "link_yr": {
       "type": "number",
       "default": 10,
       "min": 2,
-      "max": 60
+      "max": 60,
+      "label": "Link height",
+      "group": "Advanced",
+      "help": "Half-height of a link.",
+      "unit": "mm"
     },
     "link_cd": {
       "type": "number",
       "default": 5.6,
       "min": 1,
-      "max": 40
+      "max": 40,
+      "label": "Link curve depth",
+      "group": "Advanced",
+      "help": "Shapes the link's curve.",
+      "unit": "mm"
     },
     "link_ca": {
       "type": "number",
       "default": 45,
       "min": 10,
-      "max": 80
+      "max": 80,
+      "label": "Link curve angle",
+      "group": "Advanced",
+      "help": "Shapes the link's curve.",
+      "unit": "°"
     },
     "match_chain_thickness": {
       "type": "integer",
       "default": 1,
       "min": 0,
-      "max": 1
+      "max": 1,
+      "label": "Match plate to chain",
+      "group": "Advanced",
+      "help": "1 = make the plate as thick as the chain."
     },
     "plate_enabled": {
       "type": "integer",
       "default": 1,
       "min": 0,
-      "max": 1
+      "max": 1,
+      "label": "Include plate",
+      "group": "Style",
+      "help": "1 = add a pendant plate inside the chain, 0 = chain only."
     },
     "plate_w": {
       "type": "number",
       "default": 60,
       "min": 10,
-      "max": 200
+      "max": 200,
+      "label": "Plate width",
+      "group": "Dimensions",
+      "help": "Width of the backing plate.",
+      "unit": "mm"
     },
     "plate_h": {
       "type": "number",
       "default": 24,
       "min": 10,
-      "max": 200
+      "max": 200,
+      "label": "Plate height",
+      "group": "Dimensions",
+      "help": "Height of the backing plate.",
+      "unit": "mm"
     },
     "plate_th": {
       "type": "number",
       "default": 4,
       "min": 1,
-      "max": 20
+      "max": 20,
+      "label": "Plate thickness",
+      "group": "Dimensions",
+      "help": "How thick the backing plate is.",
+      "unit": "mm"
     },
     "plate_radius": {
       "type": "number",
       "default": 4,
       "min": 0,
-      "max": 20
+      "max": 20,
+      "label": "Plate corner rounding",
+      "group": "Advanced",
+      "help": "Corner rounding of the pendant plate.",
+      "unit": "mm"
     },
     "plate_offset_x": {
       "type": "number",
       "default": 0,
       "min": -200,
-      "max": 200
+      "max": 200,
+      "label": "Plate nudge (across)",
+      "group": "Advanced",
+      "help": "Manual horizontal adjustment of the plate.",
+      "unit": "mm"
     },
     "plate_offset_y": {
       "type": "number",
       "default": 0,
       "min": -200,
-      "max": 200
+      "max": 200,
+      "label": "Plate nudge (up/down)",
+      "group": "Advanced",
+      "help": "Manual vertical adjustment of the plate.",
+      "unit": "mm"
     },
     "plate_auto_fit": {
       "type": "integer",
       "default": 0,
       "min": 0,
-      "max": 1
+      "max": 1,
+      "label": "Auto-size plate",
+      "group": "Style",
+      "help": "1 = size the plate to the text automatically."
     },
     "plate_shape_mode": {
       "type": "string",
@@ -157,121 +242,192 @@
       "options": [
         "rect",
         "text_outline"
-      ]
+      ],
+      "label": "Plate shape",
+      "group": "Style",
+      "help": "Outline shape of the pendant."
     },
     "plate_outline_pad": {
       "type": "number",
       "default": 4,
       "min": 0,
-      "max": 30
+      "max": 30,
+      "label": "Plate outline padding",
+      "group": "Advanced",
+      "help": "Extra margin when the plate follows the text outline.",
+      "unit": "mm"
     },
     "plate_outline_round": {
       "type": "number",
       "default": 2,
       "min": 0,
-      "max": 20
+      "max": 20,
+      "label": "Plate outline rounding",
+      "group": "Advanced",
+      "help": "Smoothing applied to the outline shape.",
+      "unit": "mm"
     },
     "bail_enabled": {
       "type": "integer",
       "default": 1,
       "min": 0,
-      "max": 1
+      "max": 1,
+      "label": "Add hanging loop",
+      "group": "Style",
+      "help": "1 = add a loop for a chain or keyring, 0 = none."
     },
     "bail_auto": {
       "type": "integer",
       "default": 1,
       "min": 0,
-      "max": 1
+      "max": 1,
+      "label": "Auto-place loop",
+      "group": "Advanced",
+      "help": "1 = position the loop automatically, 0 = use the offsets below."
     },
     "bail_w": {
       "type": "number",
       "default": 12,
       "min": 4,
-      "max": 60
+      "max": 60,
+      "label": "Loop width",
+      "group": "Advanced",
+      "help": "Width of the hanging loop.",
+      "unit": "mm"
     },
     "bail_h": {
       "type": "number",
       "default": 18,
       "min": 4,
-      "max": 80
+      "max": 80,
+      "label": "Loop height",
+      "group": "Advanced",
+      "help": "Height of the hanging loop.",
+      "unit": "mm"
     },
     "bail_th": {
       "type": "number",
       "default": 4,
       "min": 1,
-      "max": 20
+      "max": 20,
+      "label": "Loop thickness",
+      "group": "Advanced",
+      "help": "Thickness of the loop.",
+      "unit": "mm"
     },
     "bail_radius": {
       "type": "number",
       "default": 3,
       "min": 0,
-      "max": 20
+      "max": 20,
+      "label": "Loop rounding",
+      "group": "Advanced",
+      "help": "Corner rounding on the loop.",
+      "unit": "mm"
     },
     "bail_gap": {
       "type": "number",
       "default": -2,
       "min": -20,
-      "max": 40
+      "max": 40,
+      "label": "Loop gap",
+      "group": "Advanced",
+      "help": "Gap between the loop and the plate.",
+      "unit": "mm"
     },
     "bail_offset_x": {
       "type": "number",
       "default": 0,
       "min": -200,
-      "max": 200
+      "max": 200,
+      "label": "Loop nudge (across)",
+      "group": "Advanced",
+      "help": "Manual horizontal adjustment. Needs auto-place off.",
+      "unit": "mm"
     },
     "bail_offset_y": {
       "type": "number",
       "default": 0,
       "min": -200,
-      "max": 200
+      "max": 200,
+      "label": "Loop nudge (up/down)",
+      "group": "Advanced",
+      "help": "Manual vertical adjustment. Needs auto-place off.",
+      "unit": "mm"
     },
     "text_enabled": {
       "type": "integer",
       "default": 1,
       "min": 0,
-      "max": 1
+      "max": 1,
+      "label": "Include text",
+      "group": "Text",
+      "help": "Turn the text off to get a plain blank design."
     },
     "line1": {
       "type": "string",
-      "default": "CUSTOM"
+      "default": "CUSTOM",
+      "label": "Line 1",
+      "group": "Text",
+      "help": "The main line of text."
     },
     "line2": {
       "type": "string",
-      "default": ""
+      "default": "",
+      "label": "Line 2",
+      "group": "Text",
+      "help": "A second line. Leave blank for one line."
     },
     "line3": {
       "type": "string",
-      "default": ""
+      "default": "",
+      "label": "Line 3",
+      "group": "Text",
+      "help": "A third line. Leave blank to skip it."
     },
     "text_size": {
       "type": "number",
       "default": 10,
       "min": 4,
-      "max": 40
+      "max": 40,
+      "label": "Max text size",
+      "group": "Text",
+      "help": "Cap on letter height. Text is shrunk automatically if it doesn't fit, so this is a maximum, not a fixed size.",
+      "unit": "mm"
     },
     "text_height": {
       "type": "number",
       "default": 1.2,
       "min": 0.4,
-      "max": 5
+      "max": 5,
+      "label": "Text height",
+      "group": "Style",
+      "help": "How far the letters stick out (or how deep they're cut). About 1 mm is plenty.",
+      "unit": "mm"
     },
     "line_gap": {
       "type": "number",
       "default": 8,
       "min": 0,
-      "max": 30
+      "max": 30,
+      "label": "Line spacing",
+      "group": "Text",
+      "help": "Vertical gap between lines. Reduced automatically if the lines won't fit.",
+      "unit": "mm"
     },
     "offset_x": {
       "type": "number",
       "default": 0,
       "min": -200,
-      "max": 200
+      "max": 200,
+      "hidden": true
     },
     "offset_y": {
       "type": "number",
       "default": 0,
       "min": -200,
-      "max": 200
+      "max": 200,
+      "hidden": true
     },
     "text_align": {
       "type": "string",
@@ -280,31 +436,48 @@
         "left",
         "center",
         "right"
-      ]
+      ],
+      "label": "Text alignment",
+      "group": "Style",
+      "help": "Left, centred, or right."
     },
     "emboss": {
       "type": "integer",
       "default": 1,
       "min": 0,
-      "max": 1
+      "max": 1,
+      "label": "Raised text",
+      "group": "Style",
+      "help": "1 = text sticks out of the surface, 0 = text is cut into it. Raised text is easier to print and to colour differently."
     },
     "pad_x": {
       "type": "number",
       "default": 4,
       "min": 0,
-      "max": 50
+      "max": 50,
+      "label": "Side padding",
+      "group": "Advanced",
+      "help": "Clear space left and right of the text.",
+      "unit": "mm"
     },
     "pad_y": {
       "type": "number",
       "default": 3,
       "min": 0,
-      "max": 50
+      "max": 50,
+      "label": "Top/bottom padding",
+      "group": "Advanced",
+      "help": "Clear space above and below the text.",
+      "unit": "mm"
     },
     "emblem_auto_fit": {
       "type": "integer",
       "default": 0,
       "min": 0,
-      "max": 1
+      "max": 1,
+      "label": "Auto-fit emblem",
+      "group": "Emblem",
+      "help": "1 = scale the emblem to the plate automatically."
     },
     "emblem_snap": {
       "type": "string",
@@ -320,13 +493,19 @@
         "top_right",
         "bottom_left",
         "bottom_right"
-      ]
+      ],
+      "label": "Emblem position",
+      "group": "Emblem",
+      "help": "Snap the emblem to a spot on the plate. Choose 'custom' to place it by hand with the X/Y values below."
     },
     "emblem_autocenter": {
       "type": "integer",
       "default": 1,
       "min": 0,
-      "max": 1
+      "max": 1,
+      "label": "Auto-centre emblem",
+      "group": "Emblem",
+      "help": "1 = centre it exactly when position is 'center'."
     },
     "emblem_enabled": {
       "type": "integer",
@@ -360,37 +539,59 @@
       "type": "number",
       "default": 0.25,
       "min": 0.05,
-      "max": 5
+      "max": 5,
+      "label": "Emblem size",
+      "group": "Emblem",
+      "help": "Scale factor for the uploaded SVG. 0.25 = quarter size."
     },
     "emblem_x": {
       "type": "number",
       "default": 0,
       "min": -100,
-      "max": 100
+      "max": 100,
+      "label": "Emblem X",
+      "group": "Emblem",
+      "help": "Left/right position. Only used when Emblem position is 'custom'.",
+      "unit": "mm"
     },
     "emblem_y": {
       "type": "number",
       "default": 0,
       "min": -100,
-      "max": 100
+      "max": 100,
+      "label": "Emblem Y",
+      "group": "Emblem",
+      "help": "Up/down position. Only used when Emblem position is 'custom'.",
+      "unit": "mm"
     },
     "emblem_rot": {
       "type": "number",
       "default": 0,
       "min": -180,
-      "max": 180
+      "max": 180,
+      "label": "Emblem rotation",
+      "group": "Emblem",
+      "help": "Turn the emblem.",
+      "unit": "°"
     },
     "emblem_mode": {
       "type": "integer",
       "default": 1,
       "min": 0,
-      "max": 1
+      "max": 1,
+      "label": "Raised emblem",
+      "group": "Emblem",
+      "help": "1 = emblem sticks out, 0 = it's cut into the surface."
     },
     "emblem_depth": {
       "type": "number",
       "default": 1.2,
       "min": 0.4,
-      "max": 4
+      "max": 4,
+      "label": "Emblem height",
+      "group": "Emblem",
+      "help": "How far the emblem stands out of (or cuts into) the surface.",
+      "unit": "mm"
     }
   },
   "category": "Jewelry",

@@ -6,20 +6,75 @@
   "icon": "🪝",
   "description": "Screw-mount J-hook for coats, bags, headphones, or cables.",
   "params": {
-    "plate_w": { "type": "number", "default": 30, "min": 20, "max": 60,
-                 "label": "Plate width", "unit": "mm", "group": "Dimensions" },
-    "plate_h": { "type": "number", "default": 60, "min": 40, "max": 120,
-                 "label": "Plate height", "unit": "mm", "group": "Dimensions" },
-    "plate_th": { "type": "number", "default": 5, "min": 3, "max": 10,
-                  "label": "Plate thickness", "unit": "mm", "group": "Dimensions" },
-    "hook_d": { "type": "number", "default": 9, "min": 5, "max": 18,
-                "label": "Hook thickness", "unit": "mm", "group": "Style" },
-    "hook_reach": { "type": "number", "default": 28, "min": 15, "max": 60,
-                    "label": "Hook reach", "unit": "mm", "group": "Style",
-                    "help": "How far the hook sticks out from the wall." },
-    "tip_up": { "type": "number", "default": 14, "min": 5, "max": 30,
-                "label": "Hook tip rise", "unit": "mm", "group": "Style" },
-    "screw_d": { "type": "number", "default": 4.2, "min": 3, "max": 6,
-                 "label": "Screw hole diameter", "unit": "mm", "group": "Advanced" }
+    "plate_w": {
+      "type": "number",
+      "default": 30,
+      "min": 20,
+      "max": 60,
+      "label": "Plate width",
+      "unit": "mm",
+      "group": "Dimensions",
+      "help": "Width of the backing plate."
+    },
+    "plate_h": {
+      "type": "number",
+      "default": 60,
+      "min": 40,
+      "max": 120,
+      "label": "Plate height",
+      "unit": "mm",
+      "group": "Dimensions",
+      "help": "Height of the backing plate."
+    },
+    "plate_th": {
+      "type": "number",
+      "default": 5,
+      "min": 3,
+      "max": 10,
+      "label": "Plate thickness",
+      "unit": "mm",
+      "group": "Dimensions",
+      "help": "How thick the backing plate is."
+    },
+    "hook_d": {
+      "type": "number",
+      "default": 9,
+      "min": 5,
+      "max": 18,
+      "label": "Hook thickness",
+      "unit": "mm",
+      "group": "Style",
+      "help": "How chunky the hook is. Thicker carries more weight."
+    },
+    "hook_reach": {
+      "type": "number",
+      "default": 28,
+      "min": 15,
+      "max": 60,
+      "label": "Hook reach",
+      "unit": "mm",
+      "group": "Style",
+      "help": "How far the hook sticks out from the wall."
+    },
+    "tip_up": {
+      "type": "number",
+      "default": 14,
+      "min": 5,
+      "max": 30,
+      "label": "Hook tip rise",
+      "unit": "mm",
+      "group": "Style",
+      "help": "How far the tip curls up, stopping things sliding off."
+    },
+    "screw_d": {
+      "type": "number",
+      "default": 4.2,
+      "min": 3,
+      "max": 6,
+      "label": "Screw hole diameter",
+      "unit": "mm",
+      "group": "Advanced",
+      "help": "Match your screws — 4.2 mm suits a common #8 screw."
+    }
   }
 }

@@ -17,14 +17,16 @@
     "line1": {
       "type": "string",
       "default": "MAX",
-      "label": "Pet name",
-      "group": "Text"
+      "label": "Line 1",
+      "group": "Text",
+      "help": "The main line of text."
     },
     "line2": {
       "type": "string",
       "default": "",
-      "label": "Phone (optional)",
-      "group": "Text"
+      "label": "Line 2",
+      "group": "Text",
+      "help": "A second line. Leave blank for one line."
     },
     "shape": {
       "type": "string",
@@ -34,8 +36,9 @@
         "round",
         "heart"
       ],
-      "label": "Tag shape",
-      "group": "Style"
+      "label": "Shape",
+      "group": "Style",
+      "help": "The outline of the design."
     },
     "emboss": {
       "type": "integer",
@@ -44,7 +47,7 @@
       "max": 1,
       "label": "Raised text",
       "group": "Style",
-      "help": "1 = raised (embossed) text, 0 = engraved."
+      "help": "1 = text sticks out of the surface, 0 = text is cut into it. Raised text is easier to print and to colour differently."
     },
     "tag_w": {
       "type": "number",
@@ -53,7 +56,8 @@
       "max": 80,
       "label": "Tag width",
       "unit": "mm",
-      "group": "Dimensions"
+      "group": "Dimensions",
+      "help": "Width of the tag."
     },
     "th": {
       "type": "number",
@@ -62,16 +66,18 @@
       "max": 6,
       "label": "Thickness",
       "unit": "mm",
-      "group": "Dimensions"
+      "group": "Dimensions",
+      "help": "How thick the plate is. 3–4 mm is sturdy for a tag or keychain."
     },
     "hole_d": {
       "type": "number",
       "default": 4,
       "min": 2.5,
       "max": 8,
-      "label": "Ring hole diameter",
+      "label": "Hole diameter",
       "unit": "mm",
-      "group": "Dimensions"
+      "group": "Dimensions",
+      "help": "Size of the hole. ~4 mm suits a split ring or a screw."
     },
     "text_size": {
       "type": "number",
@@ -80,7 +86,8 @@
       "max": 20,
       "label": "Max text size",
       "unit": "mm",
-      "group": "Text"
+      "group": "Text",
+      "help": "Cap on letter height. Text is shrunk automatically if it doesn't fit, so this is a maximum, not a fixed size."
     },
     "line_gap": {
       "type": "number",
@@ -89,16 +96,18 @@
       "max": 14,
       "label": "Line spacing",
       "unit": "mm",
-      "group": "Text"
+      "group": "Text",
+      "help": "Vertical gap between lines. Reduced automatically if the lines won't fit."
     },
     "text_height": {
       "type": "number",
       "default": 1.0,
       "min": 0.6,
       "max": 2.5,
-      "label": "Text emboss height",
+      "label": "Text height",
       "unit": "mm",
-      "group": "Style"
+      "group": "Style",
+      "help": "How far the letters stick out (or how deep they're cut). About 1 mm is plenty."
     }
   },
   "multipart": true

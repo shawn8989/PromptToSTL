@@ -31,6 +31,7 @@ Dockerfile.local
 docker-compose.override.yml
 templates/custom/
 lib/BOSL2/.git/
+!templates/*/thumb.png
 !assets/
 !assets/*.svg
 !assets/*.png

@@ -9,31 +9,51 @@
       "type": "number",
       "default": 90,
       "min": 30,
-      "max": 200
+      "max": 200,
+      "label": "Width",
+      "group": "Dimensions",
+      "help": "Overall width.",
+      "unit": "mm"
     },
     "height": {
       "type": "number",
       "default": 70,
       "min": 20,
-      "max": 200
+      "max": 200,
+      "label": "Height",
+      "group": "Dimensions",
+      "help": "Overall height.",
+      "unit": "mm"
     },
     "min_thick": {
       "type": "number",
       "default": 0.6,
       "min": 0.4,
-      "max": 2.0
+      "max": 2.0,
+      "label": "Thinnest layer",
+      "group": "Advanced",
+      "help": "Where the photo is brightest. Thinner = brighter.",
+      "unit": "mm"
     },
     "max_thick": {
       "type": "number",
       "default": 3.0,
       "min": 1.5,
-      "max": 8.0
+      "max": 8.0,
+      "label": "Thickest layer",
+      "group": "Advanced",
+      "help": "Where the photo is darkest. Thicker = more contrast.",
+      "unit": "mm"
     },
     "border": {
       "type": "number",
       "default": 3.0,
       "min": 0.0,
-      "max": 15.0
+      "max": 15.0,
+      "label": "Border width",
+      "group": "Dimensions",
+      "help": "Plain edge around the image.",
+      "unit": "mm"
     },
     "dat_file": {
       "type": "string",

@@ -59,6 +59,22 @@ Wall windings are constructed outward-facing; do not add `fix_normals` (it costs
 Each template lives in `templates/<id>/` and requires two files:
 
 - **`schema.json`** — defines the template label, the `.scad` filename, optional `text_box` geometry expressions, `max_lines`, and a `params` map with `type`/`default`/`min`/`max` per parameter. UI metadata: template-level `category`, `icon` (emoji), `description` drive the gallery cards; param-level `label`, `unit`, `help`, `group` ("Text"/"Dimensions"/"Style" render inline, "Emblem"/"Advanced" render in collapsed expanders; ungrouped params fall back to name-prefix heuristics), and `options` (renders a selectbox). `hidden: true` hides a param from the form.
+
+  Don't hand-edit param metadata — `scripts/apply_param_docs.py` owns it. Add
+  an entry to that script's `D` table (or `HIDE` set) and re-run it; it fails
+  loudly if any visible param is undocumented. Other optional template-level
+  flags: `self_fitting_text` (the `.scad` scales text itself, so the Python
+  layout engine leaves `text_size` alone) and `thumb_yaw` (camera azimuth for
+  the gallery thumbnail, when the default view faces a blank side).
+
+### Gallery Thumbnails
+
+`scripts/render_thumbnails.py` builds every template at its defaults and writes
+`templates/<id>/thumb.png`, which the gallery cards display. It uses a small
+numpy+PIL software rasterizer, so it needs no GL and adds no runtime
+dependency — thumbnails are committed, and the app never renders at request
+time. Re-run it after changing geometry or defaults. It shares the app's text
+auto-fit (`apply_text_layout`) so thumbnails match what users actually get.
 - **`model.scad`** (or `keychain.scad`) — OpenSCAD geometry that reads variables injected via `-D` CLI flags. All parameters in `schema.json` must have matching variable declarations in the `.scad` file.
 
 The `text_box` field in `schema.json` contains arithmetic expressions (evaluated by `eval_expr` in `app.py`) that compute the usable text area in mm from other parameters. This drives the auto-sizing logic in `layout.py`.

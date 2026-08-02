@@ -7,8 +7,9 @@ PromptToSTL combines structured templates with OpenSCAD to create parametric 3D 
 ## Features
 - **Photo lithophanes in seconds**: heart / circle / rectangle photo plates are
   meshed natively in Python (numpy + trimesh) — no OpenSCAD needed, ~2 s builds.
-- **Visual template gallery**: browse designs by category, customize with
-  friendly labeled parameters, build, download.
+- **Visual template gallery**: 25 designs shown as rendered 3D previews,
+  grouped by category and searchable; every setting has a plain-English
+  explanation.
 - **Local Streamlit GUI**: photo preprocessing (brightness/contrast/gamma/invert)
   with live heightmap preview; live 3D viewer with color/material controls.
 - **My builds**: every build is re-editable — reload its settings, tweak, rebuild.
