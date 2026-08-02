@@ -89,6 +89,24 @@ def _parse_json(text: str) -> Dict[str, Any]:
     return {}
 
 
+def _fallback(templates: Dict[str, Dict[str, Any]], notes: str) -> Dict[str, Any]:
+    """Return a safe default proposal (first template + defaults) with a note.
+
+    Keeps the app usable when no API key is configured or the provider errors.
+    """
+    first_template = next(iter(templates.keys()))
+    schema = templates[first_template]
+    return {
+        "template_id": first_template,
+        "params": _sanitize_params(schema, {}),
+        "notes": notes,
+    }
+
+
+def _has_api_key() -> bool:
+    return bool(os.environ.get("OPENAI_API_KEY") or os.environ.get("ANTHROPIC_API_KEY"))
+
+
 _ROUTING_HINTS = (
     "Photo-based (lithophane) templates — choose when the user mentions "
     "a photo, picture, image, backlit print, or light-up display:\n"
@@ -168,13 +186,14 @@ def route_intent(
     """
     description = (description or "").strip()
     if not description:
-        first_template = next(iter(templates.keys()))
-        schema = templates[first_template]
-        return {
-            "template_id": first_template,
-            "params": _sanitize_params(schema, {}),
-            "notes": "Add a description to generate a proposal.",
-        }
+        return _fallback(templates, "Add a description to generate a proposal.")
+
+    if not _has_api_key():
+        return _fallback(
+            templates,
+            "AI routing is off (no OPENAI_API_KEY or ANTHROPIC_API_KEY set). "
+            "Pick a design and edit the parameters manually.",
+        )
 
     template_list = []
     for template_id, schema in templates.items():
@@ -185,9 +204,16 @@ def route_intent(
             "params": schema.get("params", {}),
         })
 
-    model = _make_model()
-    response = model.invoke(_build_messages(description, template_list, current))
-    data = _parse_json(response.content or "")
+    try:
+        model = _make_model()
+        response = model.invoke(_build_messages(description, template_list, current))
+        data = _parse_json(response.content or "")
+    except Exception as exc:  # noqa: BLE001 — degrade gracefully on any API error
+        return _fallback(
+            templates,
+            f"AI routing failed ({exc.__class__.__name__}); showing a default "
+            "design. Edit the parameters manually.",
+        )
 
     template_id = data.get("template_id")
     if template_id not in templates:

@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="260" viewBox="0 0 1200 260">
+  <rect width="1200" height="260" fill="#f5f5f5" />
+  <g font-family="Helvetica, Arial, sans-serif" font-size="18" fill="#1a1a1a" text-anchor="middle">
+    <rect x="40" y="70" width="220" height="120" rx="16" fill="#ffffff" stroke="#222" />
+    <text x="150" y="120">Structured</text>
+    <text x="150" y="145">Inputs</text>
+
+    <rect x="330" y="70" width="220" height="120" rx="16" fill="#ffffff" stroke="#222" />
+    <text x="440" y="120">Schema +</text>
+    <text x="440" y="145">Parameters</text>
+
+    <rect x="620" y="70" width="220" height="120" rx="16" fill="#ffffff" stroke="#222" />
+    <text x="730" y="120">OpenSCAD</text>
+    <text x="730" y="145">Model</text>
+
+    <rect x="910" y="70" width="220" height="120" rx="16" fill="#ffffff" stroke="#222" />
+    <text x="1020" y="120">Validated</text>
+    <text x="1020" y="145">STL Output</text>
+  </g>
+  <g stroke="#222" stroke-width="3" fill="none" stroke-linecap="round">
+    <line x1="260" y1="130" x2="330" y2="130" />
+    <line x1="550" y1="130" x2="620" y2="130" />
+    <line x1="840" y1="130" x2="910" y2="130" />
+    <polyline points="320,120 330,130 320,140" />
+    <polyline points="610,120 620,130 610,140" />
+    <polyline points="900,120 910,130 900,140" />
+  </g>
+</svg>

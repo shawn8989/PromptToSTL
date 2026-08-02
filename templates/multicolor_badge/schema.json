@@ -1,0 +1,197 @@
+{
+  "template_id": "multicolor_badge",
+  "label": "Multicolor Badge (2-Color Print)",
+  "scad_file": "model.scad",
+  "max_lines": 2,
+  "print_note": "Change filament color at {base_thick}mm for 2-color effect. Import two STL files in your slicer for best results.",
+  "multicolor_mode": true,
+  "text_box": {
+    "box_w": "w - 2*pad_x",
+    "box_h": "h - 2*pad_y",
+    "offset_x": 0,
+    "offset_y": 0
+  },
+  "params": {
+    "w": {
+      "type": "number",
+      "default": 70,
+      "min": 30,
+      "max": 150
+    },
+    "h": {
+      "type": "number",
+      "default": 30,
+      "min": 15,
+      "max": 100
+    },
+    "base_thick": {
+      "type": "number",
+      "default": 2.0,
+      "min": 0.8,
+      "max": 6.0
+    },
+    "text_height": {
+      "type": "number",
+      "default": 1.2,
+      "min": 0.4,
+      "max": 4.0
+    },
+    "corner_r": {
+      "type": "number",
+      "default": 4.0,
+      "min": 0.0,
+      "max": 20.0
+    },
+    "line1": {
+      "type": "string",
+      "default": "YOUR TEXT"
+    },
+    "line2": {
+      "type": "string",
+      "default": ""
+    },
+    "text_size": {
+      "type": "number",
+      "default": 12,
+      "min": 5,
+      "max": 40
+    },
+    "line_gap": {
+      "type": "number",
+      "default": 8,
+      "min": 3,
+      "max": 25
+    },
+    "pad_x": {
+      "type": "number",
+      "default": 5,
+      "min": 2,
+      "max": 30
+    },
+    "pad_y": {
+      "type": "number",
+      "default": 4,
+      "min": 2,
+      "max": 30
+    },
+    "text_align": {
+      "type": "string",
+      "default": "center",
+      "options": [
+        "left",
+        "center",
+        "right"
+      ]
+    },
+    "emboss": {
+      "type": "integer",
+      "default": 1,
+      "min": 0,
+      "max": 1
+    },
+    "text_box_w": {
+      "type": "number",
+      "default": 60,
+      "min": 0,
+      "max": 500,
+      "hidden": true
+    },
+    "text_box_h": {
+      "type": "number",
+      "default": 22,
+      "min": 0,
+      "max": 500,
+      "hidden": true
+    },
+    "text_box_offset_x": {
+      "type": "number",
+      "default": 0,
+      "min": -200,
+      "max": 200,
+      "hidden": true
+    },
+    "text_box_offset_y": {
+      "type": "number",
+      "default": 0,
+      "min": -200,
+      "max": 200,
+      "hidden": true
+    },
+    "emblem_enabled": {
+      "type": "integer",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "hidden": true
+    },
+    "emblem_path": {
+      "type": "string",
+      "default": "",
+      "hidden": true
+    },
+    "emblem_kind": {
+      "type": "string",
+      "default": "svg",
+      "hidden": true
+    },
+    "emblem_scale": {
+      "type": "number",
+      "default": 0.25,
+      "min": 0.05,
+      "max": 5
+    },
+    "emblem_x": {
+      "type": "number",
+      "default": 0,
+      "min": -100,
+      "max": 100
+    },
+    "emblem_y": {
+      "type": "number",
+      "default": 0,
+      "min": -100,
+      "max": 100
+    },
+    "emblem_rot": {
+      "type": "number",
+      "default": 0,
+      "min": -180,
+      "max": 180
+    },
+    "emblem_mode": {
+      "type": "integer",
+      "default": 1,
+      "min": 0,
+      "max": 1,
+      "hidden": true
+    },
+    "emblem_depth": {
+      "type": "number",
+      "default": 1.2,
+      "min": 0.4,
+      "max": 4
+    },
+    "emblem_snap": {
+      "type": "string",
+      "default": "custom",
+      "hidden": true
+    },
+    "emblem_autocenter": {
+      "type": "integer",
+      "default": 1,
+      "min": 0,
+      "max": 1,
+      "hidden": true
+    },
+    "emblem_invert": {
+      "type": "integer",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "hidden": true
+    }
+  },
+  "category": "Text & signs",
+  "icon": "🎨",
+  "description": "Two-color badge — separate base and text parts for multi-material printing."
+}

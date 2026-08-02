@@ -18,8 +18,18 @@ from src.core.layout import layout_text
 from src.core.litho_mesh import build_litho_mesh
 from src.core.qr import make_qr_png
 from src.core.runner import run_openscad, supports_manifold
+from src.core.template_builder import (
+    EmblemSpec,
+    TemplateSpec,
+    TextSpec,
+    coerce_template_spec,
+    create_template,
+    sanitize_template_id,
+    spec_to_defaults,
+)
 from src.core.validate import validate_stl
 from src.intent.router import repair_params, route_intent
+from src.intent.template_builder_agent import propose_template_spec
 from streamlit_stl import stl_from_file
 try:
     import pyvista as pv
@@ -153,7 +163,11 @@ for tid in templates:
 with st.sidebar:
     st.header("🧱 PromptToSTL")
     st.caption("Photos and text → 3D-printable STL files")
-    mode = st.radio("Mode", ["Manual", "Describe it"], horizontal=True)
+    app_mode = st.radio("", ["Build", "Create Template"], horizontal=True,
+                        label_visibility="collapsed")
+    mode = "Manual"
+    if app_mode == "Build":
+        mode = st.radio("Mode", ["Manual", "Describe it"], horizontal=True)
     st.divider()
     with st.expander("⚙️ Settings", expanded=False):
         if "openscad_exe" not in st.session_state:
@@ -184,6 +198,144 @@ st.caption("Turn photos and text into 3D-printable gifts in seconds.")
 
 if not templates:
     st.error("No templates found. Add templates/<id>/schema.json and model.scad")
+    st.stop()
+
+# ── Create Template mode ─────────────────────────────────────────────────────
+if app_mode == "Create Template":
+    st.subheader("🛠️ Template Builder")
+    st.caption("Create a reusable parametric design from building blocks — "
+               "it then appears in the gallery like any other template.")
+
+    with st.expander("✨ Describe it and let AI draft the template", expanded=False):
+        desc = st.text_area("Describe the template", height=100, key="builder_desc",
+                            placeholder="e.g. A 90 mm round badge with two lines of "
+                                        "raised text and a logo in the centre")
+        if st.button("Generate proposal"):
+            try:
+                st.session_state["builder_proposal"] = propose_template_spec(desc)
+            except Exception as err:
+                st.error(f"AI proposal failed: {err}")
+        proposal = st.session_state.get("builder_proposal")
+        if proposal:
+            st.json(proposal, expanded=False)
+            if st.button("Apply to form"):
+                try:
+                    spec = coerce_template_spec(proposal)
+                    st.session_state["builder_defaults"] = spec_to_defaults(spec)
+                    st.rerun()
+                except Exception as err:
+                    st.error(f"Could not apply: {err}")
+
+    defaults = st.session_state.get("builder_defaults") or {}
+    dt = defaults.get("text") or {}
+    de = defaults.get("emblem") or {}
+    shape_default = defaults.get("shape", "rounded_rect")
+
+    with st.form("template_builder"):
+        template_id_raw = st.text_input("Template ID",
+                                        value=defaults.get("template_id", "custom_template"))
+        label = st.text_input("Label", value=defaults.get("label", "Custom Template"))
+        shape_label = st.selectbox("Base shape", ["Rounded Rectangle", "Circle"],
+                                   index=0 if shape_default == "rounded_rect" else 1)
+        sc1, sc2 = st.columns(2)
+        if shape_label == "Rounded Rectangle":
+            width = sc1.number_input("Width (mm)", value=float(defaults.get("width", 80.0)),
+                                     min_value=10.0, max_value=400.0)
+            height = sc2.number_input("Height (mm)", value=float(defaults.get("height", 30.0)),
+                                      min_value=10.0, max_value=400.0)
+            radius = sc1.number_input("Corner radius (mm)", value=float(defaults.get("radius", 5.0)),
+                                      min_value=0.0, max_value=200.0)
+            diameter = 0.0
+        else:
+            diameter = sc1.number_input("Diameter (mm)", value=float(defaults.get("diameter", 70.0)),
+                                        min_value=10.0, max_value=400.0)
+            width = height = radius = 0.0
+        thickness = sc2.number_input("Thickness (mm)", value=float(defaults.get("thickness", 4.0)),
+                                     min_value=1.0, max_value=50.0)
+
+        include_text = st.checkbox("Include text region", value=bool(dt) if defaults else True)
+        text_spec = None
+        if include_text:
+            max_lines = st.selectbox("Max lines", [1, 2, 3],
+                                     index=max(0, min(2, int(dt.get("max_lines", 2)) - 1)))
+            line1 = st.text_input("Default line 1", value=dt.get("line1", "YOUR TEXT"))
+            line2 = st.text_input("Default line 2", value=dt.get("line2", "")) if max_lines >= 2 else ""
+            line3 = st.text_input("Default line 3", value=dt.get("line3", "")) if max_lines >= 3 else ""
+            tc1, tc2 = st.columns(2)
+            text_size = tc1.number_input("Text size (mm)", value=float(dt.get("text_size", 12.0)),
+                                         min_value=4.0, max_value=60.0)
+            text_height = tc2.number_input("Text depth (mm)", value=float(dt.get("text_height", 1.2)),
+                                           min_value=0.2, max_value=10.0)
+            line_gap = tc1.number_input("Line gap (mm)", value=float(dt.get("line_gap", 8.0)),
+                                        min_value=0.0, max_value=60.0)
+            pad_x = tc2.number_input("Padding X (mm)", value=float(dt.get("pad_x", 6.0)),
+                                     min_value=0.0, max_value=200.0)
+            pad_y = tc1.number_input("Padding Y (mm)", value=float(dt.get("pad_y", 4.0)),
+                                     min_value=0.0, max_value=200.0)
+            align_opts = ["center", "left", "right"]
+            text_align = tc2.selectbox("Text align", align_opts,
+                                       index=align_opts.index(dt.get("text_align", "center")))
+            emboss = 1 if st.selectbox(
+                "Text mode", ["Emboss", "Engrave"],
+                index=0 if int(dt.get("emboss", 1)) == 1 else 1) == "Emboss" else 0
+            text_spec = TextSpec(
+                enabled=True, max_lines=max_lines, line1=line1, line2=line2, line3=line3,
+                text_size=text_size, text_height=text_height, line_gap=line_gap,
+                pad_x=pad_x, pad_y=pad_y, emboss=emboss, text_align=text_align,
+            )
+
+        include_emblem = st.checkbox("Include emblem region",
+                                     value=bool(de) if defaults else False)
+        emblem_spec = None
+        if include_emblem:
+            snap_opts = ["custom", "center", "left", "right", "above_text", "below_text",
+                         "top_left", "top_right", "bottom_left", "bottom_right"]
+            ec1, ec2 = st.columns(2)
+            emblem_snap = ec1.selectbox(
+                "Emblem snap", snap_opts,
+                index=snap_opts.index(de.get("snap", "custom")) if de.get("snap") in snap_opts else 0)
+            emblem_autocenter = ec2.checkbox("Auto-center", value=bool(de.get("autocenter", 1)))
+            emblem_scale = ec1.number_input("Emblem scale", value=float(de.get("scale", 0.25)),
+                                            min_value=0.05, max_value=5.0)
+            emblem_depth = ec2.number_input("Emblem depth (mm)", value=float(de.get("depth", 1.2)),
+                                            min_value=0.2, max_value=10.0)
+            emblem_x = ec1.number_input("Emblem X (mm)", value=float(de.get("x", 0.0)),
+                                        min_value=-200.0, max_value=200.0)
+            emblem_y = ec2.number_input("Emblem Y (mm)", value=float(de.get("y", 0.0)),
+                                        min_value=-200.0, max_value=200.0)
+            emblem_rot = ec1.number_input("Emblem rotation (°)", value=float(de.get("rot", 0.0)),
+                                          min_value=-180.0, max_value=180.0)
+            emblem_mode = 1 if ec2.selectbox(
+                "Emblem mode", ["Emboss", "Engrave"],
+                index=0 if int(de.get("mode", 1)) == 1 else 1) == "Emboss" else 0
+            emblem_spec = EmblemSpec(
+                enabled=True, snap=emblem_snap, autocenter=1 if emblem_autocenter else 0,
+                scale=emblem_scale, depth=emblem_depth, x=emblem_x, y=emblem_y,
+                rot=emblem_rot, mode=emblem_mode,
+            )
+
+        submitted = st.form_submit_button("Create template", type="primary")
+
+    if submitted:
+        tid = sanitize_template_id(template_id_raw)
+        if not tid:
+            st.error("Template ID cannot be empty.")
+        else:
+            spec = TemplateSpec(
+                template_id=tid, label=label or tid,
+                shape="rounded_rect" if shape_label == "Rounded Rectangle" else "circle",
+                width=width, height=height, diameter=diameter,
+                thickness=thickness, radius=radius,
+                text=text_spec, emblem=emblem_spec,
+            )
+            try:
+                final_id, _out_dir = create_template(spec)
+                st.session_state.pop("builder_defaults", None)
+                st.success(f"Template created: custom/{final_id} — "
+                           f"switch to **Build** to use it.")
+                st.rerun()
+            except FileExistsError:
+                st.error(f"Template ID already exists: {tid}")
     st.stop()
 
 if "template_select" not in st.session_state:

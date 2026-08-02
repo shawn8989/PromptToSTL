@@ -1,0 +1,399 @@
+{
+  "template_id": "cuban_link_chain",
+  "label": "Cuban Link Chain",
+  "scad_file": "model.scad",
+  "max_lines": 3,
+  "text_box": {
+    "box_w": "plate_w - 2*pad_x",
+    "box_h": "plate_h - 2*pad_y",
+    "offset_x": "plate_offset_x",
+    "offset_y": "plate_offset_y"
+  },
+  "params": {
+    "chain_layout_mode": {
+      "type": "string",
+      "default": "frame",
+      "options": [
+        "line",
+        "ring",
+        "frame"
+      ]
+    },
+    "chain_links": {
+      "type": "integer",
+      "default": 54,
+      "min": 4,
+      "max": 200
+    },
+    "chain_auto_links": {
+      "type": "integer",
+      "default": 1,
+      "min": 0,
+      "max": 1
+    },
+    "chain_spacing": {
+      "type": "number",
+      "default": 0,
+      "min": -5,
+      "max": 20
+    },
+    "chain_scale": {
+      "type": "number",
+      "default": 1,
+      "min": 0.5,
+      "max": 2
+    },
+    "ring_radius": {
+      "type": "number",
+      "default": 70,
+      "min": 20,
+      "max": 200
+    },
+    "frame_gap": {
+      "type": "number",
+      "default": 6,
+      "min": -10,
+      "max": 40
+    },
+    "frame_corner_r": {
+      "type": "number",
+      "default": 18,
+      "min": 0,
+      "max": 120
+    },
+    "link_cut": {
+      "type": "number",
+      "default": 2.4,
+      "min": 0,
+      "max": 10
+    },
+    "link_thickness": {
+      "type": "number",
+      "default": 5.2,
+      "min": 1,
+      "max": 20
+    },
+    "link_xr": {
+      "type": "number",
+      "default": 7.4,
+      "min": 2,
+      "max": 40
+    },
+    "link_yr": {
+      "type": "number",
+      "default": 10,
+      "min": 2,
+      "max": 60
+    },
+    "link_cd": {
+      "type": "number",
+      "default": 5.6,
+      "min": 1,
+      "max": 40
+    },
+    "link_ca": {
+      "type": "number",
+      "default": 45,
+      "min": 10,
+      "max": 80
+    },
+    "match_chain_thickness": {
+      "type": "integer",
+      "default": 1,
+      "min": 0,
+      "max": 1
+    },
+    "plate_enabled": {
+      "type": "integer",
+      "default": 1,
+      "min": 0,
+      "max": 1
+    },
+    "plate_w": {
+      "type": "number",
+      "default": 60,
+      "min": 10,
+      "max": 200
+    },
+    "plate_h": {
+      "type": "number",
+      "default": 24,
+      "min": 10,
+      "max": 200
+    },
+    "plate_th": {
+      "type": "number",
+      "default": 4,
+      "min": 1,
+      "max": 20
+    },
+    "plate_radius": {
+      "type": "number",
+      "default": 4,
+      "min": 0,
+      "max": 20
+    },
+    "plate_offset_x": {
+      "type": "number",
+      "default": 0,
+      "min": -200,
+      "max": 200
+    },
+    "plate_offset_y": {
+      "type": "number",
+      "default": 0,
+      "min": -200,
+      "max": 200
+    },
+    "plate_auto_fit": {
+      "type": "integer",
+      "default": 0,
+      "min": 0,
+      "max": 1
+    },
+    "plate_shape_mode": {
+      "type": "string",
+      "default": "rect",
+      "options": [
+        "rect",
+        "text_outline"
+      ]
+    },
+    "plate_outline_pad": {
+      "type": "number",
+      "default": 4,
+      "min": 0,
+      "max": 30
+    },
+    "plate_outline_round": {
+      "type": "number",
+      "default": 2,
+      "min": 0,
+      "max": 20
+    },
+    "bail_enabled": {
+      "type": "integer",
+      "default": 1,
+      "min": 0,
+      "max": 1
+    },
+    "bail_auto": {
+      "type": "integer",
+      "default": 1,
+      "min": 0,
+      "max": 1
+    },
+    "bail_w": {
+      "type": "number",
+      "default": 12,
+      "min": 4,
+      "max": 60
+    },
+    "bail_h": {
+      "type": "number",
+      "default": 18,
+      "min": 4,
+      "max": 80
+    },
+    "bail_th": {
+      "type": "number",
+      "default": 4,
+      "min": 1,
+      "max": 20
+    },
+    "bail_radius": {
+      "type": "number",
+      "default": 3,
+      "min": 0,
+      "max": 20
+    },
+    "bail_gap": {
+      "type": "number",
+      "default": -2,
+      "min": -20,
+      "max": 40
+    },
+    "bail_offset_x": {
+      "type": "number",
+      "default": 0,
+      "min": -200,
+      "max": 200
+    },
+    "bail_offset_y": {
+      "type": "number",
+      "default": 0,
+      "min": -200,
+      "max": 200
+    },
+    "text_enabled": {
+      "type": "integer",
+      "default": 1,
+      "min": 0,
+      "max": 1
+    },
+    "line1": {
+      "type": "string",
+      "default": "CUSTOM"
+    },
+    "line2": {
+      "type": "string",
+      "default": ""
+    },
+    "line3": {
+      "type": "string",
+      "default": ""
+    },
+    "text_size": {
+      "type": "number",
+      "default": 10,
+      "min": 4,
+      "max": 40
+    },
+    "text_height": {
+      "type": "number",
+      "default": 1.2,
+      "min": 0.4,
+      "max": 5
+    },
+    "line_gap": {
+      "type": "number",
+      "default": 8,
+      "min": 0,
+      "max": 30
+    },
+    "offset_x": {
+      "type": "number",
+      "default": 0,
+      "min": -200,
+      "max": 200
+    },
+    "offset_y": {
+      "type": "number",
+      "default": 0,
+      "min": -200,
+      "max": 200
+    },
+    "text_align": {
+      "type": "string",
+      "default": "center",
+      "options": [
+        "left",
+        "center",
+        "right"
+      ]
+    },
+    "emboss": {
+      "type": "integer",
+      "default": 1,
+      "min": 0,
+      "max": 1
+    },
+    "pad_x": {
+      "type": "number",
+      "default": 4,
+      "min": 0,
+      "max": 50
+    },
+    "pad_y": {
+      "type": "number",
+      "default": 3,
+      "min": 0,
+      "max": 50
+    },
+    "emblem_auto_fit": {
+      "type": "integer",
+      "default": 0,
+      "min": 0,
+      "max": 1
+    },
+    "emblem_snap": {
+      "type": "string",
+      "default": "custom",
+      "options": [
+        "custom",
+        "center",
+        "left",
+        "right",
+        "above_text",
+        "below_text",
+        "top_left",
+        "top_right",
+        "bottom_left",
+        "bottom_right"
+      ]
+    },
+    "emblem_autocenter": {
+      "type": "integer",
+      "default": 1,
+      "min": 0,
+      "max": 1
+    },
+    "emblem_enabled": {
+      "type": "integer",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "hidden": true
+    },
+    "emblem_path": {
+      "type": "string",
+      "default": "",
+      "hidden": true
+    },
+    "emblem_kind": {
+      "type": "string",
+      "default": "svg",
+      "options": [
+        "svg",
+        "heightmap"
+      ],
+      "hidden": true
+    },
+    "emblem_invert": {
+      "type": "integer",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "hidden": true
+    },
+    "emblem_scale": {
+      "type": "number",
+      "default": 0.25,
+      "min": 0.05,
+      "max": 5
+    },
+    "emblem_x": {
+      "type": "number",
+      "default": 0,
+      "min": -100,
+      "max": 100
+    },
+    "emblem_y": {
+      "type": "number",
+      "default": 0,
+      "min": -100,
+      "max": 100
+    },
+    "emblem_rot": {
+      "type": "number",
+      "default": 0,
+      "min": -180,
+      "max": 180
+    },
+    "emblem_mode": {
+      "type": "integer",
+      "default": 1,
+      "min": 0,
+      "max": 1
+    },
+    "emblem_depth": {
+      "type": "number",
+      "default": 1.2,
+      "min": 0.4,
+      "max": 4
+    }
+  },
+  "category": "Jewelry",
+  "icon": "⛓️",
+  "description": "Print-in-place Cuban link chain — adjust link size and count."
+}

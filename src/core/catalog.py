@@ -2,14 +2,26 @@ import json
 from pathlib import Path
 
 TEMPLATES_DIR = Path(__file__).resolve().parents[2] / "templates"
+CUSTOM_DIR = TEMPLATES_DIR / "custom"
 
 def list_templates():
     items = []
-    for d in sorted(TEMPLATES_DIR.iterdir()):
-        if d.is_dir():
+    if TEMPLATES_DIR.exists():
+        for d in sorted(TEMPLATES_DIR.iterdir()):
+            if not d.is_dir():
+                continue
+            if d.name == "custom":
+                continue
             schema = d / "schema.json"
             if schema.exists():
                 items.append(d.name)
+    if CUSTOM_DIR.exists():
+        for d in sorted(CUSTOM_DIR.iterdir()):
+            if not d.is_dir():
+                continue
+            schema = d / "schema.json"
+            if schema.exists():
+                items.append(f"custom/{d.name}")
     return items
 
 def load_template(template_id: str):

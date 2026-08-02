@@ -1,0 +1,243 @@
+{
+  "template_id": "plaque",
+  "label": "Wall Plaque",
+  "scad_file": "model.scad",
+  "max_lines": 3,
+  "text_box": {
+    "box_w": "w - 2*pad_x - 2*border_w",
+    "box_h": "h - 2*pad_y - 2*border_w",
+    "offset_x": 0,
+    "offset_y": 0
+  },
+  "params": {
+    "w": {
+      "type": "number",
+      "default": 120,
+      "min": 40,
+      "max": 300
+    },
+    "h": {
+      "type": "number",
+      "default": 60,
+      "min": 20,
+      "max": 200
+    },
+    "th": {
+      "type": "number",
+      "default": 5.0,
+      "min": 2.0,
+      "max": 15.0
+    },
+    "border_w": {
+      "type": "number",
+      "default": 5.0,
+      "min": 0.0,
+      "max": 20.0
+    },
+    "border_th": {
+      "type": "number",
+      "default": 1.5,
+      "min": 0.0,
+      "max": 5.0
+    },
+    "corner_r": {
+      "type": "number",
+      "default": 6.0,
+      "min": 0.0,
+      "max": 30.0
+    },
+    "mount_holes": {
+      "type": "integer",
+      "default": 1,
+      "min": 0,
+      "max": 1
+    },
+    "hole_d": {
+      "type": "number",
+      "default": 4.5,
+      "min": 2.0,
+      "max": 10.0
+    },
+    "hole_margin": {
+      "type": "number",
+      "default": 8.0,
+      "min": 4.0,
+      "max": 20.0
+    },
+    "line1": {
+      "type": "string",
+      "default": "YOUR NAME"
+    },
+    "line2": {
+      "type": "string",
+      "default": ""
+    },
+    "line3": {
+      "type": "string",
+      "default": ""
+    },
+    "text_size": {
+      "type": "number",
+      "default": 14,
+      "min": 6,
+      "max": 50
+    },
+    "text_height": {
+      "type": "number",
+      "default": 1.2,
+      "min": 0.4,
+      "max": 4.0
+    },
+    "line_gap": {
+      "type": "number",
+      "default": 9,
+      "min": 4,
+      "max": 30
+    },
+    "pad_x": {
+      "type": "number",
+      "default": 6,
+      "min": 2,
+      "max": 40
+    },
+    "pad_y": {
+      "type": "number",
+      "default": 5,
+      "min": 2,
+      "max": 40
+    },
+    "text_align": {
+      "type": "string",
+      "default": "center",
+      "options": [
+        "left",
+        "center",
+        "right"
+      ]
+    },
+    "emboss": {
+      "type": "integer",
+      "default": 1,
+      "min": 0,
+      "max": 1
+    },
+    "offset_x": {
+      "type": "number",
+      "default": 0,
+      "min": -200,
+      "max": 200,
+      "hidden": true
+    },
+    "offset_y": {
+      "type": "number",
+      "default": 0,
+      "min": -200,
+      "max": 200,
+      "hidden": true
+    },
+    "text_box_w": {
+      "type": "number",
+      "default": 100,
+      "min": 0,
+      "max": 500,
+      "hidden": true
+    },
+    "text_box_h": {
+      "type": "number",
+      "default": 40,
+      "min": 0,
+      "max": 500,
+      "hidden": true
+    },
+    "text_box_offset_x": {
+      "type": "number",
+      "default": 0,
+      "min": -200,
+      "max": 200,
+      "hidden": true
+    },
+    "text_box_offset_y": {
+      "type": "number",
+      "default": 0,
+      "min": -200,
+      "max": 200,
+      "hidden": true
+    },
+    "emblem_enabled": {
+      "type": "integer",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "hidden": true
+    },
+    "emblem_path": {
+      "type": "string",
+      "default": "",
+      "hidden": true
+    },
+    "emblem_kind": {
+      "type": "string",
+      "default": "svg",
+      "hidden": true
+    },
+    "emblem_scale": {
+      "type": "number",
+      "default": 0.25,
+      "min": 0.05,
+      "max": 5
+    },
+    "emblem_x": {
+      "type": "number",
+      "default": 0,
+      "min": -150,
+      "max": 150
+    },
+    "emblem_y": {
+      "type": "number",
+      "default": 0,
+      "min": -100,
+      "max": 100
+    },
+    "emblem_rot": {
+      "type": "number",
+      "default": 0,
+      "min": -180,
+      "max": 180
+    },
+    "emblem_mode": {
+      "type": "integer",
+      "default": 1,
+      "min": 0,
+      "max": 1,
+      "hidden": true
+    },
+    "emblem_depth": {
+      "type": "number",
+      "default": 1.2,
+      "min": 0.4,
+      "max": 4
+    },
+    "emblem_snap": {
+      "type": "string",
+      "default": "custom",
+      "hidden": true
+    },
+    "emblem_autocenter": {
+      "type": "integer",
+      "default": 1,
+      "min": 0,
+      "max": 1,
+      "hidden": true
+    },
+    "emblem_invert": {
+      "type": "integer",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "hidden": true
+    }
+  },
+  "category": "Text & signs",
+  "icon": "🏆",
+  "description": "Wall plaque with engraved or raised text and mounting holes."
+}

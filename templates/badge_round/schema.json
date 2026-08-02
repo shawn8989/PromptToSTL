@@ -1,0 +1,227 @@
+{
+  "template_id": "badge_round",
+  "label": "Round Badge / Button",
+  "scad_file": "model.scad",
+  "max_lines": 2,
+  "text_box": {
+    "box_w": "2*(diameter/2 - border_w - pad_x)*0.707",
+    "box_h": "2*(diameter/2 - border_w - pad_y)*0.707",
+    "offset_x": 0,
+    "offset_y": 0
+  },
+  "params": {
+    "diameter": {
+      "type": "number",
+      "default": 50,
+      "min": 20,
+      "max": 150
+    },
+    "th": {
+      "type": "number",
+      "default": 4.0,
+      "min": 1.5,
+      "max": 12.0
+    },
+    "border_w": {
+      "type": "number",
+      "default": 4.0,
+      "min": 0.0,
+      "max": 15.0
+    },
+    "border_th": {
+      "type": "number",
+      "default": 1.0,
+      "min": 0.0,
+      "max": 4.0
+    },
+    "bail_enabled": {
+      "type": "integer",
+      "default": 1,
+      "min": 0,
+      "max": 1
+    },
+    "bail_d": {
+      "type": "number",
+      "default": 6.0,
+      "min": 3.0,
+      "max": 15.0
+    },
+    "bail_thick": {
+      "type": "number",
+      "default": 2.0,
+      "min": 1.0,
+      "max": 5.0
+    },
+    "line1": {
+      "type": "string",
+      "default": "YOUR TEXT"
+    },
+    "line2": {
+      "type": "string",
+      "default": ""
+    },
+    "text_size": {
+      "type": "number",
+      "default": 10,
+      "min": 4,
+      "max": 30
+    },
+    "text_height": {
+      "type": "number",
+      "default": 1.2,
+      "min": 0.4,
+      "max": 4.0
+    },
+    "line_gap": {
+      "type": "number",
+      "default": 8,
+      "min": 3,
+      "max": 20
+    },
+    "pad_x": {
+      "type": "number",
+      "default": 4,
+      "min": 2,
+      "max": 20
+    },
+    "pad_y": {
+      "type": "number",
+      "default": 4,
+      "min": 2,
+      "max": 20
+    },
+    "text_align": {
+      "type": "string",
+      "default": "center",
+      "options": [
+        "left",
+        "center",
+        "right"
+      ]
+    },
+    "emboss": {
+      "type": "integer",
+      "default": 1,
+      "min": 0,
+      "max": 1
+    },
+    "offset_x": {
+      "type": "number",
+      "default": 0,
+      "min": -100,
+      "max": 100,
+      "hidden": true
+    },
+    "offset_y": {
+      "type": "number",
+      "default": 0,
+      "min": -100,
+      "max": 100,
+      "hidden": true
+    },
+    "text_box_w": {
+      "type": "number",
+      "default": 30,
+      "min": 0,
+      "max": 200,
+      "hidden": true
+    },
+    "text_box_h": {
+      "type": "number",
+      "default": 30,
+      "min": 0,
+      "max": 200,
+      "hidden": true
+    },
+    "text_box_offset_x": {
+      "type": "number",
+      "default": 0,
+      "min": -100,
+      "max": 100,
+      "hidden": true
+    },
+    "text_box_offset_y": {
+      "type": "number",
+      "default": 0,
+      "min": -100,
+      "max": 100,
+      "hidden": true
+    },
+    "emblem_enabled": {
+      "type": "integer",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "hidden": true
+    },
+    "emblem_path": {
+      "type": "string",
+      "default": "",
+      "hidden": true
+    },
+    "emblem_kind": {
+      "type": "string",
+      "default": "svg",
+      "hidden": true
+    },
+    "emblem_scale": {
+      "type": "number",
+      "default": 0.25,
+      "min": 0.05,
+      "max": 5
+    },
+    "emblem_x": {
+      "type": "number",
+      "default": 0,
+      "min": -75,
+      "max": 75
+    },
+    "emblem_y": {
+      "type": "number",
+      "default": 0,
+      "min": -75,
+      "max": 75
+    },
+    "emblem_rot": {
+      "type": "number",
+      "default": 0,
+      "min": -180,
+      "max": 180
+    },
+    "emblem_mode": {
+      "type": "integer",
+      "default": 1,
+      "min": 0,
+      "max": 1,
+      "hidden": true
+    },
+    "emblem_depth": {
+      "type": "number",
+      "default": 1.2,
+      "min": 0.4,
+      "max": 4
+    },
+    "emblem_snap": {
+      "type": "string",
+      "default": "custom",
+      "hidden": true
+    },
+    "emblem_autocenter": {
+      "type": "integer",
+      "default": 1,
+      "min": 0,
+      "max": 1,
+      "hidden": true
+    },
+    "emblem_invert": {
+      "type": "integer",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "hidden": true
+    }
+  },
+  "category": "Text & signs",
+  "icon": "🎖️",
+  "description": "Round badge or button with text and an optional emblem."
+}

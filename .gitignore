@@ -2,6 +2,7 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
+.pytest_cache/
 .venv/
 venv/
 env/
@@ -28,3 +29,8 @@ Thumbs.db
 .idea/
 Dockerfile.local
 docker-compose.override.yml
+templates/custom/
+lib/BOSL2/.git/
+!assets/
+!assets/*.svg
+!assets/*.png
