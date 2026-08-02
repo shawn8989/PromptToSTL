@@ -1,0 +1,105 @@
+{
+  "template_id": "pet_tag",
+  "label": "Pet Tag",
+  "scad_file": "model.scad",
+  "category": "Text & signs",
+  "icon": "🐾",
+  "description": "Round, bone, or heart tag with your pet's name and a ring hole.",
+  "max_lines": 2,
+  "color_swap_z": "th",
+  "text_box": {
+    "box_w": "tag_w * 0.66",
+    "box_h": "tag_w * 0.42",
+    "offset_x": 0,
+    "offset_y": "0 - tag_w * 0.04"
+  },
+  "params": {
+    "line1": {
+      "type": "string",
+      "default": "MAX",
+      "label": "Pet name",
+      "group": "Text"
+    },
+    "line2": {
+      "type": "string",
+      "default": "",
+      "label": "Phone (optional)",
+      "group": "Text"
+    },
+    "shape": {
+      "type": "string",
+      "default": "bone",
+      "options": [
+        "bone",
+        "round",
+        "heart"
+      ],
+      "label": "Tag shape",
+      "group": "Style"
+    },
+    "emboss": {
+      "type": "integer",
+      "default": 1,
+      "min": 0,
+      "max": 1,
+      "label": "Raised text",
+      "group": "Style",
+      "help": "1 = raised (embossed) text, 0 = engraved."
+    },
+    "tag_w": {
+      "type": "number",
+      "default": 40,
+      "min": 25,
+      "max": 80,
+      "label": "Tag width",
+      "unit": "mm",
+      "group": "Dimensions"
+    },
+    "th": {
+      "type": "number",
+      "default": 3,
+      "min": 2,
+      "max": 6,
+      "label": "Thickness",
+      "unit": "mm",
+      "group": "Dimensions"
+    },
+    "hole_d": {
+      "type": "number",
+      "default": 4,
+      "min": 2.5,
+      "max": 8,
+      "label": "Ring hole diameter",
+      "unit": "mm",
+      "group": "Dimensions"
+    },
+    "text_size": {
+      "type": "number",
+      "default": 9,
+      "min": 4,
+      "max": 20,
+      "label": "Max text size",
+      "unit": "mm",
+      "group": "Text"
+    },
+    "line_gap": {
+      "type": "number",
+      "default": 6,
+      "min": 4,
+      "max": 14,
+      "label": "Line spacing",
+      "unit": "mm",
+      "group": "Text"
+    },
+    "text_height": {
+      "type": "number",
+      "default": 1.0,
+      "min": 0.6,
+      "max": 2.5,
+      "label": "Text emboss height",
+      "unit": "mm",
+      "group": "Style"
+    }
+  },
+  "multipart": true
+}

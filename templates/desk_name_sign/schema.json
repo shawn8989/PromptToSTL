@@ -1,0 +1,101 @@
+{
+  "template_id": "desk_name_sign",
+  "label": "Desk Name Sign",
+  "scad_file": "model.scad",
+  "category": "Text & signs",
+  "icon": "💼",
+  "description": "Wedge-shaped desk sign with your name on the angled face.",
+  "max_lines": 2,
+  "color_swap_z": "",
+  "text_box": {
+    "box_w": "w - 16",
+    "box_h": "face_h - 10",
+    "offset_x": 0,
+    "offset_y": 0
+  },
+  "params": {
+    "line1": {
+      "type": "string",
+      "default": "SHUNATHON OWENS",
+      "label": "Name",
+      "group": "Text"
+    },
+    "line2": {
+      "type": "string",
+      "default": "",
+      "label": "Title (optional)",
+      "group": "Text"
+    },
+    "emboss": {
+      "type": "integer",
+      "default": 1,
+      "min": 0,
+      "max": 1,
+      "label": "Raised text",
+      "group": "Style",
+      "help": "1 = raised (embossed) text, 0 = engraved."
+    },
+    "w": {
+      "type": "number",
+      "default": 150,
+      "min": 80,
+      "max": 250,
+      "label": "Length",
+      "unit": "mm",
+      "group": "Dimensions"
+    },
+    "sign_h": {
+      "type": "number",
+      "default": 40,
+      "min": 25,
+      "max": 80,
+      "label": "Height",
+      "unit": "mm",
+      "group": "Dimensions"
+    },
+    "depth": {
+      "type": "number",
+      "default": 34,
+      "min": 20,
+      "max": 60,
+      "label": "Base depth",
+      "unit": "mm",
+      "group": "Dimensions"
+    },
+    "face_h": {
+      "type": "number",
+      "default": 48,
+      "min": 20,
+      "max": 100,
+      "hidden": true
+    },
+    "text_size": {
+      "type": "number",
+      "default": 16,
+      "min": 6,
+      "max": 40,
+      "label": "Max text size",
+      "unit": "mm",
+      "group": "Text"
+    },
+    "line_gap": {
+      "type": "number",
+      "default": 14,
+      "min": 6,
+      "max": 30,
+      "label": "Line spacing",
+      "unit": "mm",
+      "group": "Text"
+    },
+    "text_height": {
+      "type": "number",
+      "default": 1.5,
+      "min": 0.6,
+      "max": 3,
+      "label": "Text emboss height",
+      "unit": "mm",
+      "group": "Style"
+    }
+  },
+  "multipart": true
+}

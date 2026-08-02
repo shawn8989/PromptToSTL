@@ -1,0 +1,24 @@
+{
+  "template_id": "spiral_vase",
+  "label": "Spiral Vase",
+  "scad_file": "model.scad",
+  "category": "Home & office",
+  "icon": "🏺",
+  "description": "Twisted lobed vase — slice in vase/spiral mode for a fast, seamless print.",
+  "params": {
+    "base_d": { "type": "number", "default": 70, "min": 40, "max": 150,
+                "label": "Base diameter", "unit": "mm", "group": "Dimensions" },
+    "vase_h": { "type": "number", "default": 140, "min": 60, "max": 250,
+                "label": "Height", "unit": "mm", "group": "Dimensions" },
+    "twist": { "type": "number", "default": 90, "min": 0, "max": 360,
+               "label": "Twist", "unit": "°", "group": "Style" },
+    "lobes": { "type": "integer", "default": 6, "min": 3, "max": 12,
+               "label": "Lobes", "group": "Style" },
+    "lobe_depth": { "type": "number", "default": 0.12, "min": 0.0, "max": 0.3,
+                    "label": "Lobe depth", "group": "Style",
+                    "help": "0 = smooth cylinder, 0.3 = deep flutes (fraction of radius)." },
+    "taper": { "type": "number", "default": 1.15, "min": 0.6, "max": 1.8,
+               "label": "Taper (top / bottom)", "group": "Style",
+               "help": ">1 flares outward toward the top, <1 narrows." }
+  }
+}

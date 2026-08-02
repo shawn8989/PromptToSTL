@@ -1,8 +1,9 @@
 {
   "template_id": "keychain_roundrect",
-  "label": "Keychain (Rounded Rectangle)",
+  "label": "Name Keychain",
   "scad_file": "keychain.scad",
   "max_lines": 2,
+  "emblem_support": true,
   "text_box": {
     "box_w": "w - 2*pad_x - 2*(8 + 5.5/2)",
     "box_h": "h - 2*pad_y",
@@ -10,29 +11,174 @@
     "offset_y": 0
   },
   "params": {
-    "line1": { "type": "string", "default": "YOUR NAME" },
-    "line2": { "type": "string", "default": "" },
-    "emboss": { "type": "integer", "default": 1, "min": 0, "max": 1 },
-    "w": { "type": "number", "default": 80, "min": 40, "max": 140 },
-    "h": { "type": "number", "default": 24, "min": 15, "max": 60 },
-    "th": { "type": "number", "default": 4, "min": 2, "max": 10 },
-    "text_size": { "type": "number", "default": 12, "min": 6, "max": 30 },
-    "line_gap": { "type": "number", "default": 8, "min": 4, "max": 25 },
-    "pad_x": { "type": "number", "default": 8, "min": 2, "max": 20 },
-    "pad_y": { "type": "number", "default": 5, "min": 2, "max": 20 },
-    "text_box_w": { "type": "number", "default": 42.5, "min": 0, "max": 500 },
-    "text_box_h": { "type": "number", "default": 14, "min": 0, "max": 500 },
-    "text_box_offset_x": { "type": "number", "default": 10.75, "min": -200, "max": 200 },
-    "text_box_offset_y": { "type": "number", "default": 0, "min": -200, "max": 200 },
-    "emblem_snap": { "type": "string", "default": "custom" },
-    "emblem_autocenter": { "type": "integer", "default": 1, "min": 0, "max": 1 },
-    "emblem_enabled": { "type": "integer", "default": 0, "min": 0, "max": 1 },
-    "emblem_path": { "type": "string", "default": "" },
-    "emblem_scale": { "type": "number", "default": 0.25, "min": 0.05, "max": 5 },
-    "emblem_x": { "type": "number", "default": 12, "min": -100, "max": 100 },
-    "emblem_y": { "type": "number", "default": 0, "min": -100, "max": 100 },
-    "emblem_rot": { "type": "number", "default": 0, "min": -180, "max": 180 },
-    "emblem_mode": { "type": "integer", "default": 1, "min": 0, "max": 1 },
-    "emblem_depth": { "type": "number", "default": 1.2, "min": 0.4, "max": 4 }
-  }
+    "line1": {
+      "type": "string",
+      "default": "YOUR NAME",
+      "label": "Line 1",
+      "group": "Text"
+    },
+    "line2": {
+      "type": "string",
+      "default": "",
+      "label": "Line 2 (optional)",
+      "group": "Text"
+    },
+    "emboss": {
+      "type": "integer",
+      "default": 1,
+      "min": 0,
+      "max": 1,
+      "label": "Raised text",
+      "group": "Style",
+      "help": "1 = raised (embossed) text, 0 = engraved."
+    },
+    "w": {
+      "type": "number",
+      "default": 80,
+      "min": 40,
+      "max": 140,
+      "label": "Width",
+      "unit": "mm",
+      "group": "Dimensions"
+    },
+    "h": {
+      "type": "number",
+      "default": 24,
+      "min": 15,
+      "max": 60,
+      "label": "Height",
+      "unit": "mm",
+      "group": "Dimensions"
+    },
+    "th": {
+      "type": "number",
+      "default": 4,
+      "min": 2,
+      "max": 10,
+      "label": "Thickness",
+      "unit": "mm",
+      "group": "Dimensions"
+    },
+    "text_size": {
+      "type": "number",
+      "default": 12,
+      "min": 6,
+      "max": 30,
+      "label": "Max text size",
+      "unit": "mm",
+      "group": "Text"
+    },
+    "line_gap": {
+      "type": "number",
+      "default": 8,
+      "min": 4,
+      "max": 25,
+      "label": "Line spacing",
+      "unit": "mm",
+      "group": "Text"
+    },
+    "pad_x": {
+      "type": "number",
+      "default": 8,
+      "min": 2,
+      "max": 20,
+      "label": "Horizontal padding",
+      "unit": "mm",
+      "group": "Advanced"
+    },
+    "pad_y": {
+      "type": "number",
+      "default": 5,
+      "min": 2,
+      "max": 20,
+      "label": "Vertical padding",
+      "unit": "mm",
+      "group": "Advanced"
+    },
+    "text_box_w": {
+      "type": "number",
+      "default": 42.5,
+      "min": 0,
+      "max": 500
+    },
+    "text_box_h": {
+      "type": "number",
+      "default": 14,
+      "min": 0,
+      "max": 500
+    },
+    "text_box_offset_x": {
+      "type": "number",
+      "default": 10.75,
+      "min": -200,
+      "max": 200
+    },
+    "text_box_offset_y": {
+      "type": "number",
+      "default": 0,
+      "min": -200,
+      "max": 200
+    },
+    "emblem_snap": {
+      "type": "string",
+      "default": "custom"
+    },
+    "emblem_autocenter": {
+      "type": "integer",
+      "default": 1,
+      "min": 0,
+      "max": 1
+    },
+    "emblem_enabled": {
+      "type": "integer",
+      "default": 0,
+      "min": 0,
+      "max": 1
+    },
+    "emblem_path": {
+      "type": "string",
+      "default": ""
+    },
+    "emblem_scale": {
+      "type": "number",
+      "default": 0.25,
+      "min": 0.05,
+      "max": 5
+    },
+    "emblem_x": {
+      "type": "number",
+      "default": 12,
+      "min": -100,
+      "max": 100
+    },
+    "emblem_y": {
+      "type": "number",
+      "default": 0,
+      "min": -100,
+      "max": 100
+    },
+    "emblem_rot": {
+      "type": "number",
+      "default": 0,
+      "min": -180,
+      "max": 180
+    },
+    "emblem_mode": {
+      "type": "integer",
+      "default": 1,
+      "min": 0,
+      "max": 1
+    },
+    "emblem_depth": {
+      "type": "number",
+      "default": 1.2,
+      "min": 0.4,
+      "max": 4
+    }
+  },
+  "category": "Text & signs",
+  "icon": "🔑",
+  "description": "Rounded-rectangle keychain with your name and a ring hole.",
+  "color_swap_z": "th",
+  "multipart": true
 }

@@ -1,0 +1,31 @@
+{
+  "template_id": "lithophane_ornament",
+  "label": "Photo Ornament",
+  "scad_file": "model.scad",
+  "accepts_image": true,
+  "native_litho": "ornament",
+  "category": "Photo gifts",
+  "icon": "🎄",
+  "description": "Round photo lithophane with a hanger hole — tree ornament or window charm.",
+  "params": {
+    "photo_path": { "type": "string", "default": "", "hidden": true },
+    "photo_cols": { "type": "integer", "default": 200, "min": 50, "max": 1024, "hidden": true },
+    "photo_rows": { "type": "integer", "default": 200, "min": 50, "max": 1024, "hidden": true },
+    "diameter": { "type": "number", "default": 75, "min": 40, "max": 150,
+                  "label": "Diameter", "unit": "mm", "group": "Dimensions" },
+    "frame_width": { "type": "number", "default": 4, "min": 2, "max": 12,
+                     "label": "Frame width", "unit": "mm", "group": "Dimensions" },
+    "hole_d": { "type": "number", "default": 4, "min": 2, "max": 8,
+                "label": "Hanger hole diameter", "unit": "mm", "group": "Dimensions" },
+    "hole_ring": { "type": "number", "default": 2.5, "min": 1.5, "max": 6,
+                   "label": "Hole reinforcement ring", "unit": "mm", "group": "Advanced" },
+    "min_thickness": { "type": "number", "default": 0.8, "min": 0.4, "max": 1.5,
+                       "label": "Thinnest layer", "unit": "mm", "group": "Advanced",
+                       "help": "Brightest image areas. Lower = brighter highlights, but harder to print." },
+    "max_thickness": { "type": "number", "default": 3.0, "min": 1.5, "max": 5.0,
+                       "label": "Thickest layer", "unit": "mm", "group": "Advanced",
+                       "help": "Darkest image areas. Higher = more contrast, longer print." },
+    "base_height": { "type": "number", "default": 1.2, "min": 0.4, "max": 3.0,
+                     "label": "Base plate height", "unit": "mm", "group": "Advanced" }
+  }
+}

@@ -1,8 +1,11 @@
 {
   "template_id": "lithophane_mom",
-  "label": "Lithophane — MOM (heart centre)",
+  "label": "MOM Photo Plaque",
   "scad_file": "model.scad",
   "accepts_image": true,
+  "category": "Photo gifts",
+  "icon": "💐",
+  "description": "M ❤ M — your photo as the heart. Mother's Day one-piece plaque.",
   "params": {
     "photo_path": {
       "type": "string",
@@ -27,61 +30,92 @@
       "type": "number",
       "default": 38,
       "min": 20,
-      "max": 80
+      "max": 80,
+      "label": "Heart width",
+      "unit": "mm",
+      "group": "Dimensions"
     },
     "heart_h": {
       "type": "number",
       "default": 44,
       "min": 20,
-      "max": 80
+      "max": 80,
+      "label": "Heart height",
+      "unit": "mm",
+      "group": "Dimensions"
     },
     "letter_section_w": {
       "type": "number",
       "default": 28,
       "min": 15,
-      "max": 60
+      "max": 60,
+      "label": "Letter section width",
+      "unit": "mm",
+      "group": "Dimensions"
     },
     "section_gap": {
       "type": "number",
       "default": 3,
       "min": 1,
-      "max": 10
+      "max": 10,
+      "label": "Gap between sections",
+      "unit": "mm",
+      "group": "Dimensions"
     },
     "letter_size": {
       "type": "number",
       "default": 26,
       "min": 10,
-      "max": 60
+      "max": 60,
+      "label": "Letter size",
+      "unit": "mm",
+      "group": "Style"
     },
     "letter_height": {
       "type": "number",
       "default": 1.8,
       "min": 0.6,
-      "max": 4.0
+      "max": 4.0,
+      "label": "Letter emboss height",
+      "unit": "mm",
+      "group": "Style"
     },
     "min_thickness": {
       "type": "number",
       "default": 0.8,
       "min": 0.4,
-      "max": 1.5
+      "max": 1.5,
+      "label": "Thinnest layer",
+      "unit": "mm",
+      "group": "Advanced"
     },
     "max_thickness": {
       "type": "number",
       "default": 3.0,
       "min": 1.5,
-      "max": 5.0
+      "max": 5.0,
+      "label": "Thickest layer",
+      "unit": "mm",
+      "group": "Advanced"
     },
     "frame_width": {
       "type": "number",
       "default": 3,
       "min": 1,
-      "max": 10
+      "max": 10,
+      "label": "Heart frame width",
+      "unit": "mm",
+      "group": "Dimensions"
     },
     "base_height": {
       "type": "number",
       "default": 1.2,
       "min": 0.4,
-      "max": 3.0
+      "max": 3.0,
+      "label": "Base plate height",
+      "unit": "mm",
+      "group": "Advanced"
     }
-  }
+  },
+  "color_swap_z": "base_height + max_thickness"
 }

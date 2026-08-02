@@ -1,6 +1,7 @@
 line1 = "EDGE TECH";
 line2 = "";
 emboss = 1;
+part = "all";   // "all" | "base" | "text" — multi-color part export
 diameter = 90;
 th = 4;
 rim = 1;
@@ -72,15 +73,19 @@ module base_body() {
 
 if (emboss == 1) {
   union() {
-    difference() {
-      base_body();
-      if (emblem_mode == 0) {
-        emblem_3d(th - emblem_depth);
+    if (part != "text") {
+      difference() {
+        base_body();
+        if (emblem_mode == 0) {
+          emblem_3d(th - emblem_depth);
+        }
       }
     }
-    top_text_3d();
-    if (emblem_mode == 1) {
-      emblem_3d(th);
+    if (part != "base") {
+      top_text_3d();
+      if (emblem_mode == 1) {
+        emblem_3d(th);
+      }
     }
   }
 } else {

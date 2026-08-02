@@ -1,103 +1,106 @@
 # PromptToSTL
 
-Generate 3D-printable STL files from structured prompts and parametric templates.
+**Generate 3D-printable STL files from text-based descriptions and templates.**
 
-PromptToSTL is a local, template-driven tool that turns structured inputs into deterministic OpenSCAD models and exportable STL files. It is designed for reproducible 3D printing workflows with optional AI-assisted prompt routing.
-
-![Pipeline overview](assets/pipeline.svg)
+PromptToSTL combines structured templates with OpenSCAD to create parametric 3D geometries. Designed as a local tool with AI extensibility, it supports interactive parameter editing, live previews, and STL validation.
 
 ## Features
-- Local Streamlit UI for parameter editing and builds
-- Template-based generation using `.scad` + schema definitions
-- Deterministic geometry (OpenSCAD only, no AI meshes)
-- Live STL preview and basic validation
-- Optional AI-assisted prompt routing (Describe it mode)
+- **Photo lithophanes in seconds**: heart / circle / rectangle photo plates are
+  meshed natively in Python (numpy + trimesh) — no OpenSCAD needed, ~2 s builds.
+- **Visual template gallery**: browse designs by category, customize with
+  friendly labeled parameters, build, download.
+- **Local Streamlit GUI**: photo preprocessing (brightness/contrast/gamma/invert)
+  with live heightmap preview; live 3D viewer with color/material controls.
+- **My builds**: every build is re-editable — reload its settings, tweak, rebuild.
+- **Template-based generation**: text designs use `.scad` + `.json` templates via
+  OpenSCAD (auto-uses the fast Manifold backend on 2024.09+ snapshots).
+- **"Describe it" mode**: LLM routes a natural-language request to a template.
 
-## Example Output
-![STL preview](assets/model_preview.svg)
+## Tech Stack
+- **Python**: Streamlit, trimesh
+- **OpenSCAD**: Geometry definitions
+- **Streamlit-STL**: Live rendering
 
-## Quickstart
+## Project Structure
+```plaintext
+src/              # Core logic
+templates/        # Parameterized shape models
+docs/             # Architecture & design
+tests/            # Unit/validation tests
+.github/workflows # CI pipeline
+```
+
+## Setup Instructions
 ### Requirements
-- Python 3.10+
-- OpenSCAD (CLI accessible in `PATH`)
+- Python ≥ 3.10
+- Libraries: `pip install -r requirements.txt`
+- OpenSCAD — only for text templates (keychain, coaster, nameplate, MOM/DAD
+  plaques). Photo lithophanes build without it. A
+  [2024.09+ snapshot](https://openscad.org/downloads.html#snapshots) renders
+  10–100× faster (Manifold backend, auto-detected).
 
-### Install
+### Running the App
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-```
-
-### Optional: AI Prompt Routing
-The app runs fully without any API key — every template can be built and
-exported manually. To additionally enable the AI "Describe it" and
-template-proposal modes, create a `.env` file with an Anthropic key:
-```bash
-ANTHROPIC_API_KEY=your_key_here
-```
-Without a key the AI features simply show a note and fall back to manual
-editing; nothing else is affected.
-
-### Run
-```bash
 streamlit run app.py
 ```
-Open http://localhost:8501 in your browser.
+- Visit the app at **http://localhost:8501**
 
-### Tests
+### Testing
 ```bash
-pip install -r requirements-dev.txt
-pytest
-```
-The suite validates every template schema and builds each template through
-OpenSCAD to confirm it produces a watertight STL. Build tests auto-skip if
-OpenSCAD is not installed.
-
-## Current Templates
-- Keychain (rounded rectangle)
-- Coaster (round)
-- Nameplate (multiline text layout)
-- Plaque
-- Badge (round)
-- Multicolor badge
-- Cuban link chain
-- Lithophane (photo → heightmap plate)
-
-## How It Works
-1. A template schema defines parameters and constraints.
-2. The UI renders inputs and passes values to OpenSCAD.
-3. OpenSCAD generates deterministic geometry.
-4. The STL is previewed and validated locally.
-
-## Tech Stack
-- Python (Streamlit, trimesh)
-- OpenSCAD CLI
-- Streamlit-STL for live rendering
-- Anthropic Claude (optional prompt routing / template proposals)
-
-## Project Structure
-```plaintext
-app.py              # Streamlit entry point
-src/core/           # Geometry pipeline (catalog, runner, validate, layout)
-src/intent/         # Optional AI routing + template proposals (Claude)
-src/ui/             # Streamlit panels (params, preview, emblem, lithophane)
-templates/          # OpenSCAD templates + JSON schemas
-tests/              # Schema + headless build smoke tests
-assets/             # Screenshots and diagrams for README
-out/                # Generated builds (gitignored)
+pytest                      # Run unit tests
+ruff src/ tests/            # Linter checks
 ```
 
-## Notes
-- Geometry is always produced by OpenSCAD for deterministic, printable output.
-- The "Describe it" mode uses Anthropic Claude; manual mode works fully offline.
-- The Cuban link chain uses BOSL2 bezier sweeps and renders much faster on
-  OpenSCAD 2024+ (Manifold backend) than on the legacy 2021.01 CGAL backend.
+## Deploy to the web (use it from your phone)
 
-## Roadmap (Short)
-- More templates (gridfinity bins, cookie cutters, QR plaques, tags)
-- Conversational parameter refinement ("make it 20% wider")
-- Self-healing AI template builder (render-check-retry loop)
-- Better layout constraints and text overflow handling
+The app runs on **[Streamlit Community Cloud](https://share.streamlit.io)** for
+free, straight from this repo — no server to manage, and it redeploys on every
+push. `packages.txt` installs OpenSCAD and the Liberation fonts on the server,
+so all templates work (photo lithophanes and QR plaques need no OpenSCAD at all).
 
-## License
-MIT
+1. Go to **share.streamlit.io** and sign in with GitHub.
+2. **Create app** → select this repo, pick the branch, main file `app.py`.
+   In **Advanced settings**, set **Python version to 3.13** (or 3.12).
+   ⚠️ Python **3.14 does not work**: pydantic (pulled in by langchain) calls
+   `typing._eval_type(..., prefer_fwd_module=True)`, which 3.14 removed, so
+   importing `src/intent/router.py` raises `TypeError` and the app never
+   starts. Everything else — Streamlit, trimesh, numpy, the mesher — is
+   fine on 3.14; only the AI dependency chain breaks.
+3. *(Optional — only for the AI "Describe it" chat and auto-repair)*
+   App **Settings → Secrets**, paste one of:
+   ```toml
+   OPENAI_API_KEY = "sk-…"
+   # or
+   ANTHROPIC_API_KEY = "sk-ant-…"
+   ```
+4. Deploy. You get a public `https://<name>.streamlit.app` URL that works on
+   any phone or laptop.
+
+Notes:
+- The free tier has ~1 GB RAM. Native templates (photo lithophanes, ornaments,
+  QR plaques) are fast; heavy OpenSCAD renders like the MOM/DAD plaques at high
+  photo detail may be slow.
+- The app is public by default — restrict it to invited viewers in the app
+  settings if you'd rather keep it private.
+- Files in `out/` are ephemeral (cleared on redeploy, and pruned to the newest
+  20 builds), so download STLs you want to keep.
+
+Alternative free host: **Hugging Face Spaces** (choose the Streamlit SDK; it
+reads the same `requirements.txt` and `packages.txt`).
+
+## Roadmap
+### Short Term
+- Add templates (coaster, nameplate)
+- Robust text layout handling
+- Overlay SVG logos into objects
+
+### Long Term
+- LangChain integration for AI-driven templates
+- Backend API for remote access
+- Image-to-STL pipelines with AI
+
+## Demo
+_TODO: Include screenshots of the Streamlit GUI and example STL generation._

@@ -1,0 +1,28 @@
+{
+  "template_id": "mini_planter",
+  "label": "Mini Planter",
+  "scad_file": "model.scad",
+  "category": "Home & office",
+  "icon": "🪴",
+  "description": "Tapered succulent pot with drainage holes — smooth or faceted.",
+  "params": {
+    "bottom_d": { "type": "number", "default": 60, "min": 35, "max": 120,
+                  "label": "Base diameter", "unit": "mm", "group": "Dimensions" },
+    "pot_h": { "type": "number", "default": 65, "min": 30, "max": 150,
+               "label": "Height", "unit": "mm", "group": "Dimensions" },
+    "top_scale": { "type": "number", "default": 1.35, "min": 1.0, "max": 2.0,
+                   "label": "Taper (top / bottom)", "group": "Style",
+                   "help": "1.0 = straight walls; 1.35 = classic flower-pot flare." },
+    "wall": { "type": "number", "default": 2.4, "min": 1.6, "max": 5,
+              "label": "Wall thickness", "unit": "mm", "group": "Dimensions" },
+    "floor_th": { "type": "number", "default": 3, "min": 2, "max": 6,
+                  "label": "Floor thickness", "unit": "mm", "group": "Dimensions" },
+    "facets": { "type": "integer", "default": 96, "min": 5, "max": 128,
+                "label": "Facets", "group": "Style",
+                "help": "96+ looks round; 6-10 gives a geometric faceted look." },
+    "drain_holes": { "type": "integer", "default": 3, "min": 0, "max": 7,
+                     "label": "Drainage holes", "group": "Style" },
+    "drain_d": { "type": "number", "default": 6, "min": 3, "max": 12,
+                 "label": "Drainage hole diameter", "unit": "mm", "group": "Advanced" }
+  }
+}

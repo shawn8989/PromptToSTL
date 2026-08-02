@@ -3,6 +3,7 @@
   "label": "Nameplate",
   "scad_file": "model.scad",
   "max_lines": 3,
+  "emblem_support": true,
   "text_box": {
     "box_w": "w - 2*pad_x",
     "box_h": "h - 2*pad_y",
@@ -12,83 +13,133 @@
   "params": {
     "line1": {
       "type": "string",
-      "default": "SHUNATHON"
+      "default": "SHUNATHON",
+      "label": "Line 1",
+      "group": "Text"
     },
     "line2": {
       "type": "string",
-      "default": "OWENS"
+      "default": "OWENS",
+      "label": "Line 2 (optional)",
+      "group": "Text"
     },
     "line3": {
       "type": "string",
-      "default": ""
+      "default": "",
+      "label": "Line 3 (optional)",
+      "group": "Text"
     },
     "emboss": {
       "type": "integer",
       "default": 1,
       "min": 0,
-      "max": 1
+      "max": 1,
+      "label": "Raised text",
+      "group": "Style",
+      "help": "1 = raised (embossed) text, 0 = engraved."
     },
     "w": {
       "type": "number",
       "default": 100,
       "min": 40,
-      "max": 220
+      "max": 220,
+      "label": "Width",
+      "unit": "mm",
+      "group": "Dimensions"
     },
     "h": {
       "type": "number",
       "default": 30,
       "min": 15,
-      "max": 100
+      "max": 100,
+      "label": "Height",
+      "unit": "mm",
+      "group": "Dimensions"
     },
     "th": {
       "type": "number",
       "default": 4,
       "min": 2,
-      "max": 12
+      "max": 12,
+      "label": "Thickness",
+      "unit": "mm",
+      "group": "Dimensions"
     },
     "corner_r": {
       "type": "number",
       "default": 5,
       "min": 0,
-      "max": 25
+      "max": 25,
+      "label": "Corner radius",
+      "unit": "mm",
+      "group": "Dimensions"
     },
     "text_size": {
       "type": "number",
       "default": 14,
       "min": 6,
-      "max": 50
+      "max": 50,
+      "label": "Max text size",
+      "unit": "mm",
+      "group": "Text"
     },
     "text_height": {
       "type": "number",
       "default": 1.2,
       "min": 0.6,
-      "max": 4
+      "max": 4,
+      "label": "Text emboss height",
+      "unit": "mm",
+      "group": "Style"
     },
     "pad_x": {
       "type": "number",
       "default": 8,
       "min": 2,
-      "max": 40
+      "max": 40,
+      "label": "Horizontal padding",
+      "unit": "mm",
+      "group": "Advanced"
     },
     "pad_y": {
       "type": "number",
       "default": 6,
       "min": 2,
-      "max": 40
+      "max": 40,
+      "label": "Vertical padding",
+      "unit": "mm",
+      "group": "Advanced"
     },
     "line_gap": {
       "type": "number",
       "default": 10,
       "min": 4,
-      "max": 25
+      "max": 25,
+      "label": "Line spacing",
+      "unit": "mm",
+      "group": "Text"
     },
     "text_align": {
       "type": "string",
-      "default": "center"
+      "default": "center",
+      "options": [
+        "left",
+        "center",
+        "right"
+      ],
+      "label": "Text alignment",
+      "group": "Style"
     },
     "text_anchor_y": {
       "type": "string",
-      "default": "center"
+      "default": "center",
+      "options": [
+        "top",
+        "center",
+        "bottom"
+      ],
+      "label": "Vertical anchor",
+      "group": "Style"
     },
     "text_margin_x": {
       "type": "number",
@@ -106,7 +157,10 @@
       "type": "number",
       "default": 0,
       "min": -50,
-      "max": 50
+      "max": 50,
+      "label": "Text block Y offset",
+      "unit": "mm",
+      "group": "Advanced"
     },
     "text_box_w": {
       "type": "number",
@@ -136,7 +190,9 @@
       "type": "integer",
       "default": 0,
       "min": 0,
-      "max": 1
+      "max": 1,
+      "label": "Debug geometry",
+      "group": "Advanced"
     },
     "emblem_snap": {
       "type": "string",
@@ -212,5 +268,10 @@
       "min": 6,
       "max": 60
     }
-  }
+  },
+  "category": "Text & signs",
+  "icon": "🪧",
+  "description": "Desk or door nameplate — up to three lines, optional SVG emblem.",
+  "color_swap_z": "th",
+  "multipart": true
 }

@@ -2,6 +2,7 @@ line1 = "SHUNATHON";
 line2 = "OWENS";
 line3 = "";
 emboss = 1;
+part = "all";   // "all" | "base" | "text" — multi-color part export
 w = 100;
 h = 30;
 th = 4;
@@ -163,15 +164,15 @@ module base_body() {
 if (emboss == 1) {
   difference() {
     union() {
-      base_plate();
-      text_block();
+      if (part != "text") base_plate();
+      if (part != "base") text_block();
     }
     hole_pair();
     if (emblem_mode == 0) {
       emblem_3d(th - emblem_depth);
     }
   }
-  if (emblem_mode == 1) {
+  if (emblem_mode == 1 && part != "base") {
     emblem_3d(th);
   }
 } else {

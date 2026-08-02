@@ -1,0 +1,25 @@
+{
+  "template_id": "gridfinity_bin",
+  "label": "Gridfinity Bin",
+  "scad_file": "model.scad",
+  "category": "Home & office",
+  "icon": "🗃️",
+  "description": "Gridfinity-compatible storage bin — pick grid units and height.",
+  "params": {
+    "grid_x": { "type": "integer", "default": 2, "min": 1, "max": 6,
+                "label": "Grid units wide", "group": "Dimensions",
+                "help": "1 unit = 42 mm Gridfinity pitch." },
+    "grid_y": { "type": "integer", "default": 1, "min": 1, "max": 6,
+                "label": "Grid units deep", "group": "Dimensions" },
+    "units_h": { "type": "integer", "default": 3, "min": 1, "max": 12,
+                 "label": "Height units", "group": "Dimensions",
+                 "help": "1 unit = 7 mm, on top of the 4.75 mm base." },
+    "wall": { "type": "number", "default": 1.2, "min": 0.8, "max": 3,
+              "label": "Wall thickness", "unit": "mm", "group": "Style" },
+    "floor_th": { "type": "number", "default": 2.2, "min": 1.2, "max": 5,
+                  "label": "Floor thickness", "unit": "mm", "group": "Style" },
+    "magnets": { "type": "integer", "default": 0, "min": 0, "max": 1,
+                 "label": "Magnet pockets", "group": "Style",
+                 "help": "1 = add 6.5 × 2.4 mm pockets under each base pad (4 per unit)." }
+  }
+}

@@ -1,6 +1,23 @@
 import subprocess
 from pathlib import Path
 
+_MANIFOLD_SUPPORT: dict = {}
+
+
+def supports_manifold(openscad_exe: str) -> bool:
+    """True if this OpenSCAD build accepts --backend (2024.09+ snapshots).
+    The Manifold backend renders 10-100x faster than CGAL. Probed once per
+    executable path and cached for the process lifetime."""
+    if openscad_exe not in _MANIFOLD_SUPPORT:
+        try:
+            p = subprocess.run([openscad_exe, "--help"],
+                               capture_output=True, text=True, timeout=10)
+            _MANIFOLD_SUPPORT[openscad_exe] = "--backend" in (p.stdout + p.stderr)
+        except Exception:
+            _MANIFOLD_SUPPORT[openscad_exe] = False
+    return _MANIFOLD_SUPPORT[openscad_exe]
+
+
 def run_openscad(openscad_exe: str, scad_path: Path, out_stl: Path, params: dict) -> str:
     """
     Runs OpenSCAD with -D defines. Returns combined stdout/stderr text.
@@ -10,16 +27,26 @@ def run_openscad(openscad_exe: str, scad_path: Path, out_stl: Path, params: dict
     out_stl.parent.mkdir(parents=True, exist_ok=True)
 
     cmd = [openscad_exe, "-o", str(out_stl)]
+    if supports_manifold(openscad_exe):
+        cmd.append("--backend=Manifold")
     for k, v in params.items():
         if isinstance(v, str):
-            cmd += ["-D", f'{k}="{v}"']
+            escaped = v.replace("\\", "\\\\").replace('"', '\\"')
+            cmd += ["-D", f'{k}="{escaped}"']
         elif v is None:
             continue
         else:
             cmd += ["-D", f"{k}={v}"]
     cmd.append(str(scad_path))
 
-    p = subprocess.run(cmd, capture_output=True, text=True)
+    try:
+        p = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
+    except subprocess.TimeoutExpired:
+        raise RuntimeError(
+            "OpenSCAD timed out after 300 seconds. "
+            "For lithophanes, lower the 'Photo detail' slider (200 px is a good "
+            "balance of sharpness and render time) and rebuild."
+        )
     logs = (p.stdout or "") + ("\n" + p.stderr if p.stderr else "")
     if p.returncode != 0:
         raise RuntimeError(f"OpenSCAD failed (code {p.returncode}).\n{logs}")

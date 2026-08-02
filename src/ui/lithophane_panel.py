@@ -1,12 +1,11 @@
 """Image upload section for lithophane templates."""
 from __future__ import annotations
 
-from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
 
 import streamlit as st
 
-from src.ui.helpers import save_image_as_dat, image_size_from_bytes
+from src.ui.helpers import image_size_from_bytes
 
 
 def render_lithophane_section(

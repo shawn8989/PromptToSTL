@@ -4,6 +4,13 @@ from pathlib import Path
 
 from PIL import Image, ImageEnhance, ImageOps
 
+try:
+    # Enables iPhone HEIC/HEIF photos in Image.open()
+    from pillow_heif import register_heif_opener
+    register_heif_opener()
+except ImportError:
+    pass
+
 
 def prepare_lithophane_image(
     src_bytes: bytes,
