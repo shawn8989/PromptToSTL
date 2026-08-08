@@ -11,7 +11,10 @@ def validate_stl(stl_path: Path) -> dict:
     if stl_path.stat().st_size < 1000:
         return {"ok": False, "error": "STL too small / likely empty"}
 
-    mesh = trimesh.load_mesh(stl_path, force="mesh")
+    try:
+        mesh = trimesh.load_mesh(stl_path, force="mesh")
+    except Exception as exc:
+        return {"ok": False, "error": f"trimesh could not parse STL: {exc}"}
     if mesh.is_empty:
         return {"ok": False, "error": "Mesh is empty"}
 

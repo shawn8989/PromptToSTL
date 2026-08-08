@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Project Does
 
-PromptToSTL is a local Streamlit app that generates 3D-printable STL files from parametric templates. Users either fill in parameters manually or type a natural-language description ("Describe it" mode), which is routed through an LLM to select a template and populate parameters. The resulting parameters are passed as `-D` defines to OpenSCAD, which renders the STL.
+PromptToSTL is a local Streamlit app that generates 3D-printable STL files from parametric templates. Users either fill in parameters manually, type a natural-language description ("Describe it" mode) routed through Claude Haiku to select a template and propose parameters, or create entirely new templates via the in-app Template Builder. The resulting parameters are passed as `-D` defines to OpenSCAD, which renders the STL.
 
 ## Running the App
 
@@ -15,51 +15,80 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 
-The app runs at `http://localhost:8501`. OpenSCAD must be installed and on `PATH` (`openscad` command) for builds to work.
+The app runs at `http://localhost:8501`. OpenSCAD must be installed and on `PATH` for builds to work.
+
+Copy `.env.example` to `.env` and add `ANTHROPIC_API_KEY` to enable AI routing. The rest of the app works without it.
 
 ## Linting and Tests
 
 ```bash
-ruff src/ tests/    # lint
-pytest              # run all tests
-pytest tests/test_layout.py  # single test file
+# Run all non-OpenSCAD tests (no external deps needed):
+pytest tests/test_schemas.py tests/test_layout.py tests/test_image_prep.py
+
+# Run end-to-end build tests (requires OpenSCAD on PATH):
+pytest tests/test_build.py
+
+# Run a single file:
+pytest tests/test_layout.py -v
 ```
 
-No `requirements.txt` is committed — install dependencies from the README stack: `streamlit`, `trimesh`, `streamlit-stl`, `langchain-openai`, `python-dotenv`, and optionally `pyvista`.
+The pytest binary may be at `/root/.local/share/uv/tools/pytest/bin/pytest` if not on PATH. `requirements-dev.txt` lists dev deps.
 
-The `OPENAI_API_KEY` environment variable (loaded via `.env`) is required for "Describe it" / intent mode (`src/intent/router.py`). The rest of the app works without it.
+`test_build.py` auto-skips when OpenSCAD is not installed. `test_image_prep.py` requires Pillow.
 
 ## Architecture
 
-### Request Flow
+### Two App Modes
+
+- **Build mode** — the primary flow: pick a template, set parameters, build STL.
+- **Create Template mode** — a form (and optional AI proposal) that generates a new `templates/custom/<id>/` with `schema.json` and `model.scad` from a set of building blocks. Implemented in `src/core/template_builder.py`.
+
+### Request Flow (Build Mode)
 
 ```
-app.py (Streamlit UI)
-  ├── "Describe it" mode → src/intent/router.py → ChatOpenAI (gpt-4o-mini) → proposal JSON
-  ├── Template selector → src/core/catalog.py → reads templates/<id>/schema.json + model.scad
-  ├── Text layout      → src/core/layout.py → computes text_size, line splits, y-offsets
-  ├── Build button     → src/core/runner.py → subprocess OpenSCAD with -D param flags
-  └── Validation       → src/core/validate.py → trimesh mesh inspection
+app.py
+  ├── "Describe it"  → src/intent/router.py → Claude Haiku → proposal JSON
+  ├── Template pick  → src/core/catalog.py → schema.json + model.scad
+  ├── Params UI      → src/ui/params_panel.py → render_params() + apply_text_layout()
+  ├── Emblem UI      → src/ui/emblem_panel.py → render_emblem_section()
+  ├── Lithophane UI  → src/ui/lithophane_panel.py → render_lithophane_section()
+  ├── Preview        → src/ui/preview_panel.py → render_preview_panel()
+  ├── Build button   → src/core/runner.py → subprocess OpenSCAD -D flags
+  └── Validation     → src/core/validate.py → trimesh mesh inspection
 ```
 
 ### Template System
 
-Each template lives in `templates/<id>/` and requires two files:
+Each template lives in `templates/<id>/` and requires:
 
-- **`schema.json`** — defines the template label, the `.scad` filename, optional `text_box` geometry expressions, `max_lines`, and a `params` map with `type`/`default`/`min`/`max` per parameter.
-- **`model.scad`** (or `keychain.scad`) — OpenSCAD geometry that reads variables injected via `-D` CLI flags. All parameters in `schema.json` must have matching variable declarations in the `.scad` file.
+- **`schema.json`** — defines `label`, `scad_file`, optional `text_box` expressions, `max_lines`, optional schema-level flags (`lithophane_mode`, `multicolor_mode`, `print_note`), and a `params` map.
+- **`model.scad`** — OpenSCAD geometry. Every param in `schema.json` must have a matching top-level variable declaration in the `.scad` file.
 
-The `text_box` field in `schema.json` contains arithmetic expressions (evaluated by `eval_expr` in `app.py`) that compute the usable text area in mm from other parameters. This drives the auto-sizing logic in `layout.py`.
+Custom (user-created) templates live in `templates/custom/<id>/` and are loaded alongside built-in ones by `catalog.py`.
+
+**Adding a new template**: create `templates/<id>/schema.json` and the referenced `.scad` file. No code changes needed — the template appears automatically in the UI.
+
+### Schema Conventions
+
+- String params with a fixed set of choices declare `"options": [...]`; the UI renders a selectbox automatically.
+- Params with `"hidden": true` are applied silently without a widget.
+- Emblem support is opt-in: include `emblem_enabled` in `params` and the emblem section appears.
+- Lithophane templates set `"lithophane_mode": true` at the schema root; they get the image-upload flow instead of the standard text layout.
+- Two-color templates set `"multicolor_mode": true`; the UI shows the filament-change height.
 
 ### Text Layout (`src/core/layout.py`)
 
-`layout_text()` fits text into a bounding box by:
-1. Trying decreasing font sizes (stepping down 0.5 mm from `max_text_size` to `min_text_size`)
-2. At each size, trying 1 up to `max_lines` line splits (word-aware, then character-split fallback)
-3. Returning the first combination that fits within `box_w × box_h` (with `margin` factor applied)
-4. If nothing fits, truncating the last line with `…`
+`layout_text()` fits multi-line text into a bounding box by:
+1. Stepping down from `max_text_size` to `min_text_size` (0.5 mm steps)
+2. At each size, trying 1 to `max_lines` line splits (word-aware, then character-split)
+3. Returning the first combo that fits within `box_w × box_h` (scaled by `margin`)
+4. Truncating with `…` if nothing fits
 
-The character-width model is heuristic (per-character factors, not font metrics), so actual rendered width may differ slightly.
+The `text_box` field in `schema.json` contains arithmetic expressions (evaluated by `eval_expr` in `src/ui/helpers.py`) that compute the usable text area from other param values.
+
+### AI Intent Routing (`src/intent/router.py`)
+
+`route_intent()` sends the description + all template schemas to Claude Haiku and asks for `{template_id, params, notes}` JSON. It degrades gracefully: no API key → immediate fallback with a note; API error → fallback with the error class in the note. `_sanitize_params()` coerces and clamps all returned values before they reach the UI.
 
 ### Output Directory
 
@@ -67,22 +96,7 @@ Each build writes to `out/<job_name>/`:
 - `spec.json` — template ID and params snapshot
 - `model_<timestamp>.stl` — the rendered STL
 - `logs.txt` — OpenSCAD stdout/stderr
-- `report.json` — trimesh validation results (bounds, watertight, face/vert counts)
-- `emblem.svg` (if an SVG emblem was uploaded)
+- `report.json` — trimesh validation results
+- `emblem.svg` / `emblem.dat` / `image.dat` — uploaded assets (if any)
 
-The `out/` directory is gitignored.
-
-### Adding a New Template
-
-1. Create `templates/<new_id>/schema.json` with the required structure (copy an existing one as a base).
-2. Create the `.scad` file referenced by `schema.json`'s `scad_file` field; declare every param as a top-level variable with a default.
-3. If the template has text, add a `text_box` section to the schema and set `max_lines`.
-4. The template appears automatically in the UI — no code changes needed.
-
-### Intent Router (`src/intent/router.py`)
-
-`route_intent()` sends the user description + full template schemas to `gpt-4o-mini` and asks it to output `{template_id, params, notes}` JSON. The response is sanitized through `_sanitize_params()` which coerces types and clamps to `min`/`max` bounds. Adding a new template is sufficient for it to be available to the LLM automatically.
-
-### Emblem / SVG Support
-
-Templates that support SVG emblems pass `emblem_enabled`, `emblem_path`, `emblem_scale`, `emblem_x`, `emblem_y`, `emblem_rot`, `emblem_mode`, and `emblem_depth` to OpenSCAD. The `emblem_snap` param (handled entirely in `app.py`) is a UI convenience that maps named positions (e.g. `"top_left"`, `"center"`) to absolute `emblem_x`/`emblem_y` coordinates before the build; it is not passed to OpenSCAD.
+`out/` is gitignored.
