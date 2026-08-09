@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import copy
+import json
 import sys
 from collections.abc import Sequence
 from pathlib import Path
@@ -73,10 +74,20 @@ def _empty_report(scan_path: str, base_path: str) -> dict:
 def _print_mesh(label: str, data: dict) -> None:
     bbox = " x ".join(f"{value:.3f}" for value in data["bbox_mm"])
     print(
-        f"load {label}: {data['vertices']} vertices, {data['faces']} faces, "
+        f"load {label}: {data['vertices']} vertices, {data['triangles']} triangles, "
         f"bbox {bbox} mm, volume {data['volume_mm3']:.3f} mm^3, "
         f"watertight={'yes' if data['watertight'] else 'no'}, components={data['components']}"
     )
+
+
+def _progress(stage: str, percent: int) -> None:
+    """Emit the machine-readable progress line the Studio bridge parses."""
+    print(f"PROGRESS {stage} {percent}", flush=True)
+
+
+def _emit_report(report: dict) -> None:
+    """Echo the report as the final stdout line, per the bridge contract."""
+    print(json.dumps(report, sort_keys=True), flush=True)
 
 
 def _set_error(report: dict, code: int, message: str, likely_cause: str) -> None:
@@ -84,8 +95,14 @@ def _set_error(report: dict, code: int, message: str, likely_cause: str) -> None
     report["error"] = {"code": code, "message": message, "likely_cause": likely_cause}
 
 
-def _maybe_write_json(report: dict, json_path: str | None, report_only: bool) -> None:
-    if json_path and not report_only:
+def _maybe_write_json(report: dict, json_path: str | None, report_only: bool = False) -> None:
+    """Write the report whenever --json was requested.
+
+    ``--report-only`` suppresses *STL* output, not the report itself: the
+    analysis is the entire point of that mode, and the Studio bridge needs it.
+    """
+    del report_only  # retained for call-site clarity; no longer suppresses JSON
+    if json_path:
         write_json(report, json_path)
 
 
@@ -99,9 +116,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         _set_error(report, 2, "--out is required unless --report-only is used", "missing output path")
         print(report["error"]["message"], file=sys.stderr)
         _LAST_REPORT = report
+        _emit_report(report)
         return 2
 
     try:
+        _progress("load", 5)
         scan = load_mesh(args.scan)
         base = load_mesh(args.base)
         report["input"]["scan"] = mesh_report(scan, args.scan)
@@ -109,6 +128,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         _print_mesh("scan", report["input"]["scan"])
         _print_mesh("base", report["input"]["base"])
 
+        _progress("clean", 20)
         cleaned, clean_report = clean_scan(scan, decimate=args.decimate)
         details = clean_report.as_dict()
         report["clean"] = details
@@ -119,6 +139,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             f"vertices merged={details['vertices_merged']}"
         )
 
+        _progress("orient", 35)
         oriented = orient_scan(cleaned, flip=args.flip)
         report["orientation"] = oriented.report()
         print(
@@ -126,6 +147,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             f"spread ratio={oriented.spread_ratio:.4f}, flip={'yes' if args.flip else 'no'}"
         )
 
+        _progress("scale", 45)
         scaled = scale_to_height(oriented.mesh, args.height)
         report["scale"] = scaled.report()
         if scaled.warning:
@@ -134,6 +156,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         else:
             print(f"scale: factor={scaled.applied_factor:.6f}, target={scaled.target_height_mm:.3f} mm")
 
+        _progress("pocket", 55)
         pocket = detect_pocket(base)
         pocket_report = pocket.as_dict()
         pocket_report["protected_extents_mm"] = protected_extents(pocket)
@@ -147,9 +170,13 @@ def main(argv: Sequence[str] | None = None) -> int:
             report["ok"] = True
             report["error"] = None
             _LAST_REPORT = report
-            print("report-only: analysis complete; no files written")
+            _maybe_write_json(report, args.json_path)
+            _progress("done", 100)
+            print("report-only: analysis complete; no STL written")
+            _emit_report(report)
             return 0
 
+        _progress("boolean", 70)
         placed = graft.trim_and_place_scan(scaled.mesh, base, pocket, args.overlap)
         boolean_result = graft.union_meshes(placed, base)
         report["boolean"] = boolean_result.report()
@@ -158,6 +185,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         else:
             print("boolean: manifold3d union succeeded")
 
+        _progress("verify", 85)
         checks = run_verification(boolean_result.mesh, base, pocket, target_height_mm=args.height)
         report["checks"] = checks
         for check in checks:
@@ -175,8 +203,10 @@ def main(argv: Sequence[str] | None = None) -> int:
             message = f"verification check failed: {name}"
             _set_error(report, 1, message, likely_cause)
             _LAST_REPORT = report
-            _maybe_write_json(report, args.json_path, args.report_only)
+            _maybe_write_json(report, args.json_path)
+            _progress("done", 100)
             print(f"{message}; likely cause: {likely_cause}", file=sys.stderr)
+            _emit_report(report)
             return 1
 
         output_path = Path(args.out)
@@ -185,22 +215,26 @@ def main(argv: Sequence[str] | None = None) -> int:
         report["ok"] = True
         report["error"] = None
         _LAST_REPORT = report
-        _maybe_write_json(report, args.json_path, args.report_only)
+        _maybe_write_json(report, args.json_path)
+        _progress("done", 100)
         print(f"output: verified STL written to {output_path}")
+        _emit_report(report)
         return 0
 
     except (InputError, PocketDetectionError, ValueError) as exc:
         _set_error(report, 2, str(exc), "invalid, empty, mis-oriented, or unsupported input mesh")
         _LAST_REPORT = report
-        _maybe_write_json(report, args.json_path, args.report_only)
+        _maybe_write_json(report, args.json_path)
         print(f"input error: {exc}", file=sys.stderr)
+        _emit_report(report)
         return 2
     except graft.BooleanFailure as exc:
         report["boolean"] = {"engine": None, "fell_back": True, "diagnostic": str(exc)}
         _set_error(report, 3, "both boolean engines failed", str(exc))
         _LAST_REPORT = report
-        _maybe_write_json(report, args.json_path, args.report_only)
+        _maybe_write_json(report, args.json_path)
         print(f"boolean failure: {exc}", file=sys.stderr)
+        _emit_report(report)
         return 3
 
 

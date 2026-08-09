@@ -41,10 +41,16 @@ def test_exit_nonzero_on_verification_failure(monkeypatch, tmp_path):
     assert cli.last_report()["error"]["likely_cause"]
 
 
-def test_report_only_writes_nothing(tmp_path):
+def test_report_only_writes_no_stl(tmp_path):
+    """--report-only suppresses STL output but honours an explicit --json.
+
+    The analysis is the point of the mode and the Studio bridge reads it from
+    the report, so suppressing the JSON too made the mode useless to Studio.
+    See Specs/tapgraft-cli.md.
+    """
     scan_path, base_path = _write_inputs(tmp_path)
     output_path = tmp_path / "must-not-exist.stl"
-    json_path = tmp_path / "must-not-exist.json"
+    json_path = tmp_path / "report.json"
 
     exit_code = cli.main(
         [
@@ -63,8 +69,29 @@ def test_report_only_writes_nothing(tmp_path):
     assert exit_code == 0
     assert cli.last_report()["ok"] is True
     assert not output_path.exists()
-    assert not json_path.exists()
     assert not list(tmp_path.glob("*.FAILED.stl"))
+    assert json_path.exists()
+
+
+def test_report_only_without_json_flag_writes_no_files(tmp_path):
+    scan_path, base_path = _write_inputs(tmp_path)
+    output_path = tmp_path / "must-not-exist.stl"
+
+    exit_code = cli.main(
+        [
+            "--scan",
+            str(scan_path),
+            "--base",
+            str(base_path),
+            "--out",
+            str(output_path),
+            "--report-only",
+        ]
+    )
+
+    assert exit_code == 0
+    assert not output_path.exists()
+    assert not list(tmp_path.glob("*.json"))
 
 
 def test_scale_warning_is_loud_and_report_only_continues(capsys, tmp_path):

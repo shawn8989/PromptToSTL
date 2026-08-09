@@ -39,11 +39,18 @@ def component_count(mesh: trimesh.Trimesh) -> int:
 
 
 def mesh_report(mesh: trimesh.Trimesh, path: str | Path) -> dict[str, Any]:
-    """Return the stable input/output measurements used by the JSON contract."""
+    """Return the stable input/output measurements used by the JSON contract.
+
+    ``triangles`` is the canonical key named by the bridge contract; ``faces``
+    is retained as an alias carrying the same value so existing readers keep
+    working. Both are always present and always equal.
+    """
+    face_count = len(mesh.faces)
     return {
         "path": str(Path(path)),
         "vertices": len(mesh.vertices),
-        "faces": len(mesh.faces),
+        "triangles": face_count,
+        "faces": face_count,
         "bbox_mm": [float(value) for value in mesh.extents],
         "volume_mm3": float(abs(mesh.volume)),
         "watertight": bool(mesh.is_watertight),
