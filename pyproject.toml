@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "prompt-to-stl"
+version = "1.0.0"
+description = "Parametric STL generation and verified scanned-mesh grafting"
+requires-python = ">=3.10"
+dependencies = [
+  "fast-simplification>=0.1.12",
+  "manifold3d>=3.1",
+  "networkx>=3.2",
+  "numpy>=2.0",
+  "scipy>=1.14",
+  "trimesh>=4.0",
+]
+
+[project.scripts]
+tapgraft = "src.tapgraft.cli:entrypoint"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]

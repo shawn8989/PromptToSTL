@@ -34,3 +34,8 @@ lib/BOSL2/.git/
 !assets/
 !assets/*.svg
 !assets/*.png
+
+# Python packaging artifacts
+build/
+dist/
+*.egg-info/
