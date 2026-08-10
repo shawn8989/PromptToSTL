@@ -35,13 +35,23 @@ Profile, sampled as the XY extent of vertices in each Z band:
 
 ### Mounting geometry
 
-`tapgraft --report-only` derives this base's mounting pocket as:
+The mounting pocket is **threaded**, not a plain bore. `tapgraft` 1.2 reports:
 
-```
-diameter 8.526 mm, depth 19.000 mm, mounting face -Z, protected wall 4.000 mm
-```
+| Property | Value |
+|---|---|
+| Threaded | yes |
+| Major diameter | 10.198 mm |
+| Mean diameter | 9.358 mm |
+| Minor diameter | 8.526 mm |
+| Depth | 19.000 mm (blind) |
+| Mounting face | `-Z` |
+| Protected wall | 4.000 mm |
 
-Reproduce it with any scan mesh (`--scan` is required even in report-only mode):
+The single `diameter_mm` field in the report is the *minor* diameter — cutting a
+mating post to that figure gives a thread-root fit, not a clearance fit. Use the
+major/mean values when designing anything that screws into this base.
+
+Reproduce with any scan mesh (`--scan` is required even in report-only mode):
 
 ```bash
 tapgraft --report-only \
