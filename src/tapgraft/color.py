@@ -72,7 +72,7 @@ def _unique_color_count(mesh: trimesh.Trimesh) -> int:
     colors = getattr(visual, "vertex_colors", None)
     if colors is None or len(colors) == 0:
         return 0
-    return int(len(np.unique(np.asarray(colors)[:, :3], axis=0)))
+    return len(np.unique(np.asarray(colors)[:, :3], axis=0))
 
 
 def has_color(mesh: trimesh.Trimesh) -> bool:

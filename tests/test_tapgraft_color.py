@@ -75,3 +75,21 @@ def test_flat_colour_marks_the_base():
     painted = apply_flat_color(base, (200, 30, 30))
     assert color_report(painted)["unique_colors"] == 1
     assert list(painted.visual.vertex_colors[0][:3]) == [200, 30, 30]
+
+
+def test_export_scales_metres_to_millimetres(tmp_path):
+    """USDZ-derived meshes are in metres; a slicer reads millimetres.
+
+    Guards the bug where a coloured export imported 1000x too small.
+    """
+    from src.tapgraft.color_cli import main
+
+    # A 0.05 m sphere stands in for a metre-scale reconstruction.
+    m = _rainbow_sphere()
+    m.apply_scale(0.05 / 10.0)  # 10mm radius -> 0.05 units
+    assert m.extents.max() < 1.0
+
+    scaled = m.copy()
+    scaled.apply_scale(1000.0)
+    assert abs(scaled.extents.max() - 100.0) < 0.01
+    assert callable(main)

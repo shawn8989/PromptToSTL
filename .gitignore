@@ -42,3 +42,6 @@ lib/BOSL2/.git/
 build/
 dist/
 *.egg-info/
+
+# Swift helper binary compiled on first use
+tools/usdz2obj
