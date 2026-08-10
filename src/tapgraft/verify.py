@@ -10,6 +10,7 @@ from .meshio import component_count
 from .pocket import (
     PocketDetectionError,
     PocketMeasurements,
+    comparison_tolerance_mm,
     detect_pocket,
     pocket_differences,
 )
@@ -21,6 +22,12 @@ LIKELY_CAUSES = {
     "volume_exceeds_base": "the boolean silently returned the base unchanged or added only numerical noise",
     "pocket_intact": "grafted geometry filled, shifted, or obscured the ferrule pocket",
     "height_within_tolerance": "the supplied --height does not match the finished graft or the scan scale is wrong",
+    "scale_verified": (
+        "no --height was supplied, so the scan's real-world size was never checked. "
+        "Photogrammetry from photos without depth data produces an arbitrary scale "
+        "(measured 4-8x oversize on this project). Pass a caliper-measured --height, "
+        "or --allow-unverified-scale if the size genuinely does not matter"
+    ),
 }
 
 
@@ -41,9 +48,23 @@ def run_verification(
     base: trimesh.Trimesh,
     pocket_before: PocketMeasurements,
     target_height_mm: float | None = None,
+    allow_unverified_scale: bool = False,
+    expected_total_height_mm: float | None = None,
 ) -> list[dict[str, Any]]:
     """Run checks in the exact order required by the cross-process contract."""
     checks: list[dict[str, Any]] = []
+
+    # Scale first: a geometrically perfect part at the wrong size is scrap.
+    scale_verified = target_height_mm is not None
+    checks.append(
+        _check(
+            "scale_verified",
+            scale_verified or allow_unverified_scale,
+            {"height_supplied": scale_verified, "override": bool(allow_unverified_scale)},
+            {"height_supplied": True},
+        )
+    )
+
     components = component_count(result)
     checks.append(_check("single_component", components == 1, components, 1))
 
@@ -65,11 +86,19 @@ def run_verification(
         )
     )
 
+    pocket_tolerance = comparison_tolerance_mm(pocket_before)
     try:
-        pocket_after = detect_pocket(result, protected_wall_mm=pocket_before.protected_wall_mm)
+        pocket_after = detect_pocket(
+            result,
+            protected_wall_mm=pocket_before.protected_wall_mm,
+            # The pocket cannot have grown; bound the search so grafted body
+            # geometry at the same radius cannot masquerade as bore depth.
+            max_depth_mm=pocket_before.depth_mm * 1.5 + 1.0,
+        )
         differences = pocket_differences(pocket_before, pocket_after)
-        pocket_passed = all(value <= 0.2 for value in differences.values())
-        pocket_measured: Any = differences
+        pocket_passed = all(value <= pocket_tolerance for value in differences.values())
+        pocket_measured: Any = dict(differences)
+        pocket_measured["threaded"] = pocket_before.is_threaded
     except PocketDetectionError as exc:
         pocket_passed = False
         pocket_measured = {"detection_error": str(exc)}
@@ -78,19 +107,30 @@ def run_verification(
             "pocket_intact",
             pocket_passed,
             pocket_measured,
-            {"max_difference_mm": 0.2},
+            {"max_difference_mm": pocket_tolerance, "threaded": pocket_before.is_threaded},
         )
     )
 
-    if target_height_mm is not None:
+    # `--height` is the measured height of the *scanned object*. The finished
+    # graft is taller by whatever the base contributes, so the two must not be
+    # compared directly — doing so failed a correct graft by exactly the base
+    # height. The caller supplies the expected total.
+    expected_total = expected_total_height_mm
+    if expected_total is None and target_height_mm is not None:
+        expected_total = target_height_mm
+    if expected_total is not None:
         measured_height = float(result.extents[2])
-        tolerance = float(target_height_mm * 0.05)
+        tolerance = float(expected_total * 0.05)
         checks.append(
             _check(
                 "height_within_tolerance",
-                abs(measured_height - target_height_mm) <= tolerance,
+                abs(measured_height - expected_total) <= tolerance,
                 measured_height,
-                {"target_mm": float(target_height_mm), "tolerance_mm": tolerance},
+                {
+                    "target_mm": float(expected_total),
+                    "tolerance_mm": tolerance,
+                    "scan_height_mm": float(target_height_mm) if target_height_mm else None,
+                },
             )
         )
     return checks

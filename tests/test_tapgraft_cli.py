@@ -31,7 +31,8 @@ def test_exit_nonzero_on_verification_failure(monkeypatch, tmp_path):
     monkeypatch.setattr(graft, "union_meshes", return_disconnected_mesh)
 
     exit_code = cli.main(
-        ["--scan", str(scan_path), "--base", str(base_path), "--out", str(output_path)]
+        ["--scan", str(scan_path), "--base", str(base_path), "--out", str(output_path),
+         "--allow-unverified-scale"]
     )
 
     assert exit_code != 0

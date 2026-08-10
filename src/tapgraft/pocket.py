@@ -1,7 +1,7 @@
 """Detection and comparison of a base's ferrule pocket."""
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 
 import numpy as np
 import trimesh
@@ -18,9 +18,31 @@ class PocketMeasurements:
     center_mm: list[float]
     protected_wall_mm: float
     mounting_face: str
+    # Threaded bores need more than a single fitted diameter. A circle fitted
+    # to one slice of a helix moves with the thread phase, which produced
+    # false `pocket_intact` failures on an undamaged pocket.
+    minor_diameter_mm: float = 0.0
+    major_diameter_mm: float = 0.0
+    mean_diameter_mm: float = 0.0
+    is_threaded: bool = False
+    # Phase-independent centre: the XY centroid of the whole bore wall.
+    robust_center_mm: list[float] = field(default_factory=list)
 
     def as_dict(self) -> dict:
         return asdict(self)
+
+    @property
+    def comparison_center(self) -> list[float]:
+        return self.robust_center_mm or self.center_mm
+
+    @property
+    def comparison_diameter_mm(self) -> float:
+        """The diameter to compare across a graft.
+
+        `mean_diameter_mm` averages the whole bore wall, so it does not move
+        with thread phase. Falls back to the fitted diameter for older data.
+        """
+        return self.mean_diameter_mm or self.diameter_mm
 
 
 def _fit_circle(points: np.ndarray) -> tuple[np.ndarray, float]:
@@ -78,8 +100,17 @@ def _face_candidate(mesh: trimesh.Trimesh, face_z: float, label: str) -> tuple |
     return residual, label, face_z, center, radius
 
 
-def detect_pocket(mesh: trimesh.Trimesh, protected_wall_mm: float = 4.0) -> PocketMeasurements:
-    """Measure the innermost circular loop on either Z mounting face."""
+def detect_pocket(
+    mesh: trimesh.Trimesh,
+    protected_wall_mm: float = 4.0,
+    max_depth_mm: float | None = None,
+) -> PocketMeasurements:
+    """Measure the innermost circular loop on either Z mounting face.
+
+    `max_depth_mm` bounds how far inward the bore is searched. Pass it when
+    re-measuring a grafted result, where geometry unrelated to the pocket may
+    share its radius higher up the part.
+    """
     candidates = [
         candidate
         for candidate in (
@@ -100,11 +131,47 @@ def detect_pocket(mesh: trimesh.Trimesh, protected_wall_mm: float = 4.0) -> Pock
     if len(wall_points) < 8:
         raise PocketDetectionError("not enough pocket-wall vertices to determine depth")
     if mounting_face == "-Z":
-        depth = float(wall_points[:, 2].max() - face_z)
+        along = wall_points[:, 2] - face_z
     else:
-        depth = float(face_z - wall_points[:, 2].min())
+        along = face_z - wall_points[:, 2]
+    along = along[along >= -1e-6]
+    # When re-measuring a finished graft, unrelated geometry can sit at the
+    # bore's radius further up the part — that read as a 181 mm deep pocket.
+    # Callers who already know roughly how deep it should be clip the search.
+    if max_depth_mm is not None:
+        along = along[along <= float(max_depth_mm)]
+    if len(along) == 0:
+        raise PocketDetectionError("pocket wall vertices do not run inward from the mounting face")
+    depth = float(along.max())
     if depth <= 0.0:
         raise PocketDetectionError("pocket depth is zero or points outside the base")
+
+    # Characterise the whole bore wall, not one slice. On a threaded bore the
+    # radius sweeps between minor and major with the helix, so single-slice
+    # measurements move by ~0.5 mm depending on where they land.
+    if mounting_face == "-Z":
+        in_depth = (mesh.vertices[:, 2] >= face_z) & (mesh.vertices[:, 2] <= face_z + depth)
+    else:
+        in_depth = (mesh.vertices[:, 2] <= face_z) & (mesh.vertices[:, 2] >= face_z - depth)
+    wall_band = in_depth & (vertex_radii <= radius * 1.6)
+    band_points = mesh.vertices[wall_band]
+
+    if len(band_points) >= 12:
+        band_radii = np.linalg.norm(band_points[:, :2] - center, axis=1)
+        minor_d = float(np.percentile(band_radii, 5) * 2.0)
+        major_d = float(np.percentile(band_radii, 95) * 2.0)
+        mean_d = float(band_radii.mean() * 2.0)
+        robust_center = [
+            float(band_points[:, 0].mean()),
+            float(band_points[:, 1].mean()),
+            float(face_z),
+        ]
+    else:
+        minor_d = major_d = mean_d = radius * 2.0
+        robust_center = [float(center[0]), float(center[1]), float(face_z)]
+
+    # A smooth bore varies only by faceting; a thread swings far more.
+    threaded = (major_d - minor_d) > max(0.30, mean_d * 0.08)
 
     return PocketMeasurements(
         diameter_mm=radius * 2.0,
@@ -112,22 +179,52 @@ def detect_pocket(mesh: trimesh.Trimesh, protected_wall_mm: float = 4.0) -> Pock
         center_mm=[float(center[0]), float(center[1]), float(face_z)],
         protected_wall_mm=float(protected_wall_mm),
         mounting_face=mounting_face,
+        minor_diameter_mm=minor_d,
+        major_diameter_mm=major_d,
+        mean_diameter_mm=mean_d,
+        is_threaded=bool(threaded),
+        robust_center_mm=robust_center,
     )
 
 
 def pocket_differences(before: PocketMeasurements, after: PocketMeasurements) -> dict[str, float]:
+    """Compare two measurements using phase-independent statistics.
+
+    Fitted diameter and fitted centre both move with thread phase, so they
+    cannot be compared across a graft on a threaded bore without producing
+    false failures. Mean bore diameter and the wall centroid do not move.
+    """
     return {
-        "diameter_mm": abs(after.diameter_mm - before.diameter_mm),
+        "diameter_mm": abs(after.comparison_diameter_mm - before.comparison_diameter_mm),
         "depth_mm": abs(after.depth_mm - before.depth_mm),
         "position_mm": float(
-            np.linalg.norm(np.asarray(after.center_mm, dtype=float) - np.asarray(before.center_mm, dtype=float))
+            np.linalg.norm(
+                np.asarray(after.comparison_center, dtype=float)
+                - np.asarray(before.comparison_center, dtype=float)
+            )
         ),
     }
 
 
+def comparison_tolerance_mm(pocket: PocketMeasurements, base_tolerance_mm: float = 0.2) -> float:
+    """Tolerance for `pocket_intact`.
+
+    Smooth pockets keep the strict tolerance. Threaded bores get a small
+    allowance proportional to the thread depth, because even a phase-independent
+    mean is resampled after the boolean re-triangulates the wall.
+    """
+    if not pocket.is_threaded:
+        return base_tolerance_mm
+    thread_depth = max(0.0, (pocket.major_diameter_mm - pocket.minor_diameter_mm) / 2.0)
+    return max(base_tolerance_mm, thread_depth * 0.25)
+
+
 def protected_extents(pocket: PocketMeasurements) -> dict[str, list[float]]:
-    radius = pocket.diameter_mm / 2.0 + pocket.protected_wall_mm
-    x, y, z = pocket.center_mm
+    # Protect against the widest part of the bore: on a thread that is the
+    # major diameter, so crests are covered rather than only the mean.
+    widest = max(pocket.diameter_mm, pocket.major_diameter_mm)
+    radius = widest / 2.0 + pocket.protected_wall_mm
+    x, y, z = pocket.comparison_center
     direction = 1.0 if pocket.mounting_face == "-Z" else -1.0
     far_z = z + direction * (pocket.depth_mm + pocket.protected_wall_mm)
     return {

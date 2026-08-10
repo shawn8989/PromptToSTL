@@ -31,7 +31,8 @@ def test_final_stdout_line_is_the_report_json(capsys, tmp_path):
     out_path = tmp_path / "result.stl"
 
     exit_code = cli.main(
-        ["--scan", str(scan_path), "--base", str(base_path), "--out", str(out_path)]
+        ["--scan", str(scan_path), "--base", str(base_path), "--out", str(out_path),
+         "--allow-unverified-scale"]
     )
     report = _final_json(capsys.readouterr().out)
 
@@ -45,7 +46,8 @@ def test_output_reports_canonical_triangles_key(capsys, tmp_path):
     scan_path, base_path = _write_inputs(tmp_path)
     out_path = tmp_path / "result.stl"
 
-    cli.main(["--scan", str(scan_path), "--base", str(base_path), "--out", str(out_path)])
+    cli.main(["--scan", str(scan_path), "--base", str(base_path), "--out", str(out_path),
+              "--allow-unverified-scale"])
     report = _final_json(capsys.readouterr().out)
 
     for block in (report["output"], report["input"]["scan"], report["input"]["base"]):
@@ -59,7 +61,8 @@ def test_progress_lines_are_emitted_and_end_at_100(capsys, tmp_path):
     scan_path, base_path = _write_inputs(tmp_path)
     out_path = tmp_path / "result.stl"
 
-    cli.main(["--scan", str(scan_path), "--base", str(base_path), "--out", str(out_path)])
+    cli.main(["--scan", str(scan_path), "--base", str(base_path), "--out", str(out_path),
+              "--allow-unverified-scale"])
     stdout = capsys.readouterr().out
 
     progress = [line for line in stdout.splitlines() if line.startswith("PROGRESS ")]

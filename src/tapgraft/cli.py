@@ -48,6 +48,11 @@ def _parser() -> argparse.ArgumentParser:
         action="store_true",
         help="analyse through pocket detection and write nothing",
     )
+    parser.add_argument(
+        "--allow-unverified-scale",
+        action="store_true",
+        help="proceed without --height; the output's real-world size will NOT be checked",
+    )
     parser.add_argument("--json", dest="json_path", help="write the stable report JSON")
     parser.add_argument("--verbose", action="store_true")
     return parser
@@ -186,7 +191,25 @@ def main(argv: Sequence[str] | None = None) -> int:
             print("boolean: manifold3d union succeeded")
 
         _progress("verify", 85)
-        checks = run_verification(boolean_result.mesh, base, pocket, target_height_mm=args.height)
+        # The finished part is the scan plus whatever the base adds beyond the
+        # overlap. Comparing the raw --height against the union would fail a
+        # correct graft by exactly the base's contribution.
+        expected_total_height = None
+        if args.height is not None:
+            base_contribution = max(0.0, float(base.extents[2]) - float(args.overlap))
+            expected_total_height = float(args.height) + base_contribution
+            print(
+                f"height: scan target={args.height:.2f} mm + base contribution="
+                f"{base_contribution:.2f} mm -> expected total={expected_total_height:.2f} mm"
+            )
+        checks = run_verification(
+            boolean_result.mesh,
+            base,
+            pocket,
+            target_height_mm=args.height,
+            allow_unverified_scale=args.allow_unverified_scale,
+            expected_total_height_mm=expected_total_height,
+        )
         report["checks"] = checks
         for check in checks:
             print(

@@ -43,6 +43,7 @@ def test_pocket_survives_graft(tmp_path):
             str(output_path),
             "--json",
             str(json_path),
+            "--allow-unverified-scale",
         ]
     )
 
