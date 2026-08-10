@@ -34,6 +34,9 @@ lib/BOSL2/.git/
 !assets/
 !assets/*.svg
 !assets/*.png
+# Reusable base meshes are tracked despite the global *.stl rule above.
+!assets/bases/
+!assets/bases/*.stl
 
 # Python packaging artifacts
 build/
