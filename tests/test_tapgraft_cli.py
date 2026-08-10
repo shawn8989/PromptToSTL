@@ -116,3 +116,39 @@ def test_scale_warning_is_loud_and_report_only_continues(capsys, tmp_path):
     assert "outside 0.5-2.0" in captured.out
     assert cli.last_report()["scale"]["applied_factor"] > 2.0
 
+
+
+def test_non_stl_out_extension_is_refused(tmp_path):
+    """--out must end in .stl rather than silently mislabelling the format.
+
+    write_mesh always exports STL, so `--out model.obj` used to produce a
+    binary STL under an .obj name. Every OBJ reader parses that as zero
+    vertices, so the user sees an empty model and blames the geometry rather
+    than the export. Refusing up front keeps the failure legible.
+    """
+    scan_path, base_path = _write_inputs(tmp_path)
+
+    for extension in ("obj", "ply", "glb", "3mf"):
+        output_path = tmp_path / f"model.{extension}"
+        exit_code = cli.main(
+            ["--scan", str(scan_path), "--base", str(base_path), "--out", str(output_path),
+             "--allow-unverified-scale"]
+        )
+
+        assert exit_code == 2, f".{extension} should be refused"
+        assert not output_path.exists(), f".{extension} must not be written"
+        assert f"'.{extension}'" in cli.last_report()["error"]["message"]
+
+
+def test_stl_out_extension_is_accepted(tmp_path):
+    """The refusal above must not disturb the ordinary .stl path."""
+    scan_path, base_path = _write_inputs(tmp_path)
+    output_path = tmp_path / "model.stl"
+
+    exit_code = cli.main(
+        ["--scan", str(scan_path), "--base", str(base_path), "--out", str(output_path),
+         "--allow-unverified-scale"]
+    )
+
+    assert exit_code == 0
+    assert output_path.exists()

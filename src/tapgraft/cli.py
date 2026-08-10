@@ -38,7 +38,7 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--version", action="version", version=f"tapgraft {__version__}")
     parser.add_argument("--scan", required=True, help="scanned STL, interpreted as millimetres")
     parser.add_argument("--base", required=True, help="base STL with ferrule pocket, interpreted as millimetres")
-    parser.add_argument("--out", help="verified output STL")
+    parser.add_argument("--out", help="verified output STL; the path must end in .stl")
     parser.add_argument("--height", type=float, help="measured object height in millimetres")
     parser.add_argument("--overlap", type=float, default=2.0, help="scan/base overlap in millimetres")
     parser.add_argument("--flip", action="store_true", help="invert automatic end selection")
@@ -123,6 +123,25 @@ def main(argv: Sequence[str] | None = None) -> int:
         _LAST_REPORT = report
         _emit_report(report)
         return 2
+
+    if args.out:
+        suffix = Path(args.out).suffix.lower()
+        if suffix and suffix != ".stl":
+            # write_mesh always writes STL, so any other suffix used to yield a
+            # binary STL wearing the wrong extension. An OBJ reader parses that
+            # as zero vertices, which reads as "the model failed" rather than
+            # "the export lied". Refuse instead.
+            _set_error(
+                report,
+                2,
+                f"--out must end in .stl; '{suffix}' would be written as STL under a "
+                f"misleading name. Write .stl, then convert",
+                "unsupported output extension",
+            )
+            print(report["error"]["message"], file=sys.stderr)
+            _LAST_REPORT = report
+            _emit_report(report)
+            return 2
 
     try:
         _progress("load", 5)
