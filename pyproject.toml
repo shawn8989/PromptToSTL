@@ -19,6 +19,7 @@ dependencies = [
 [project.scripts]
 tapgraft = "src.tapgraft.cli:entrypoint"
 tapgraft-color = "src.tapgraft.color_cli:entrypoint"
+charmset = "src.charmset.cli:entrypoint"
 
 [tool.setuptools.packages.find]
 where = ["."]
