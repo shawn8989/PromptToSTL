@@ -29,7 +29,9 @@ def _render(tmp_path, char, is_first=False, is_last=False, **overrides):
 
 
 def test_charm_is_a_single_watertight_solid(tmp_path):
-    out, _ = _render(tmp_path, "O")
+    """An open-pocket charm is one shell. (A sealed pocket adds an interior
+    void shell by design, so shell-counting only applies to `open`.)"""
+    out, _ = _render(tmp_path, "O", nfc_cover="open")
     report = validate_stl(out)
     assert report["ok"], report
     assert report["watertight"], "a charm must be watertight to slice cleanly"
@@ -69,20 +71,56 @@ def test_two_letters_nest_without_colliding(tmp_path):
     assert volume < 1.0, f"tab collides with socket by {volume:.2f}mm^3 — joint will not close"
 
 
-def test_nfc_pocket_is_present_at_the_requested_size(tmp_path):
-    """Volume must drop by roughly the pocket's cylinder when NFC is enabled."""
+def test_nfc_pocket_is_a_complete_circle(tmp_path):
+    """The pocket must not be clipped by the jigsaw socket.
+
+    The socket is cut into the -X edge and reaches ~10mm inward. A pocket
+    centred on the plate overlapped it by 3.19mm and printed as a bitten-off
+    circle. The template now auto-centres the pocket in the clear region, so
+    the removed volume should match a full cylinder to within facet rounding —
+    a loose tolerance here is exactly what hid the original bug.
+    """
+    import math
+
     without, params = _render(tmp_path / "n0", "O", nfc_enabled=0)
-    with_pocket, _ = _render(tmp_path / "n1", "O", nfc_enabled=1)
+    with_pocket, _ = _render(tmp_path / "n1", "O", nfc_enabled=1, nfc_cover="sealed")
 
     removed = abs(trimesh.load_mesh(without, force="mesh").volume) - abs(
         trimesh.load_mesh(with_pocket, force="mesh").volume
     )
-    import math
-
     expected = math.pi * (params["nfc_dia"] / 2) ** 2 * params["nfc_depth"]
-    assert removed == pytest.approx(expected, rel=0.15), (
-        f"pocket removed {removed:.1f}mm^3, expected about {expected:.1f}mm^3"
+    assert removed == pytest.approx(expected, rel=0.02), (
+        f"pocket removed {removed:.1f}mm^3 of an expected {expected:.1f}mm^3 — "
+        "something is clipping the circle"
     )
+
+
+@pytest.mark.parametrize("cover", ["open", "sealed", "lid"])
+def test_every_nfc_cover_mode_builds(tmp_path, cover):
+    out, _ = _render(tmp_path / cover, "O", nfc_cover=cover)
+    assert validate_stl(out)["ok"]
+
+
+def test_lid_mode_emits_a_separate_cap(tmp_path):
+    """`lid` must produce a second body, or there is nothing to cover with."""
+    plain, _ = _render(tmp_path / "p", "O", nfc_cover="open")
+    lidded, _ = _render(tmp_path / "l", "O", nfc_cover="lid")
+
+    plain_parts = len(trimesh.load_mesh(plain, force="mesh").split(only_watertight=False))
+    lid_parts = len(trimesh.load_mesh(lidded, force="mesh").split(only_watertight=False))
+    assert lid_parts == plain_parts + 1, "no lid disc was generated"
+
+
+def test_magnet_pockets_actually_remove_material(tmp_path):
+    """Guards a placement bug: the pockets once sat outside the plate entirely
+    (x = -23.3 on a plate ending at -20) and cut nothing at all."""
+    off, _ = _render(tmp_path / "m0", "O", magnet_enabled=0)
+    on, _ = _render(tmp_path / "m1", "O", magnet_enabled=1)
+
+    removed = abs(trimesh.load_mesh(off, force="mesh").volume) - abs(
+        trimesh.load_mesh(on, force="mesh").volume
+    )
+    assert removed > 50, f"magnet pockets removed only {removed:.1f}mm^3 — placed outside the solid?"
 
 
 def test_repeated_letters_get_distinct_filenames():

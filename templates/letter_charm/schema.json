@@ -2,53 +2,291 @@
   "template_id": "letter_charm",
   "label": "Letter Charm (NFC + puzzle joint)",
   "scad_file": "model.scad",
-  "print_note": "Plate {plate_w}x{plate_h}mm. NFC pocket {nfc_dia}mm on the back. Jigsaw clearance {joint_clearance}mm - print two letters first and tune before running the whole word. Magnet polarity must be consistent: every +X pocket one pole, every -X pocket the other, or half your letters will repel.",
+  "print_note": "Plate {plate_w}x{plate_h}mm. NFC pocket {nfc_dia}mm, cover mode '{nfc_cover}'. SEALED means the pocket is fully enclosed - pause the print near the top of the plate and drop the tag in. Jigsaw clearance {joint_clearance}mm; print two letters and tune before running a whole word. Magnet polarity must be consistent: every +X pocket one pole, every -X pocket the other, or half your letters will repel.",
   "params": {
-    "letter":          { "type": "string",  "default": "J" },
-    "font":            { "type": "string",  "default": "" },
-    "letter_size":     { "type": "number",  "default": 26,  "min": 5,  "max": 200 },
-    "letter_depth":    { "type": "number",  "default": 1.6, "min": 0.2, "max": 10 },
-    "emboss":          { "type": "integer", "default": 1,   "min": 0,  "max": 1 },
-    "letter_offset_x": { "type": "number",  "default": 0,   "min": -50, "max": 50 },
-    "letter_offset_y": { "type": "number",  "default": 0,   "min": -50, "max": 50 },
-
-    "plate_w":      { "type": "number", "default": 40, "min": 15, "max": 200 },
-    "plate_h":      { "type": "number", "default": 50, "min": 15, "max": 200 },
-    "plate_th":     { "type": "number", "default": 4,  "min": 1.5, "max": 20 },
-    "plate_radius": { "type": "number", "default": 4,  "min": 0,  "max": 30 },
-
-    "nfc_enabled":  { "type": "integer", "default": 1,   "min": 0, "max": 1 },
-    "nfc_dia":      { "type": "number",  "default": 26,  "min": 8, "max": 60 },
-    "nfc_depth":    { "type": "number",  "default": 0.8, "min": 0.2, "max": 5 },
-    "nfc_offset_y": { "type": "number",  "default": -6,  "min": -60, "max": 60 },
-
-    "joint_enabled":   { "type": "integer", "default": 1,    "min": 0, "max": 1 },
-    "joint_w":         { "type": "number",  "default": 9,    "min": 3, "max": 40 },
-    "joint_depth":     { "type": "number",  "default": 6,    "min": 2, "max": 30 },
-    "joint_head":      { "type": "number",  "default": 13,   "min": 4, "max": 50 },
-    "joint_clearance": { "type": "number",  "default": 0.25, "min": 0, "max": 1.5 },
-    "end_left":        { "type": "integer", "default": 0,    "min": 0, "max": 1 },
-    "end_right":       { "type": "integer", "default": 0,    "min": 0, "max": 1 },
-
-    "magnet_enabled": { "type": "integer", "default": 1,   "min": 0, "max": 1 },
-    "magnet_dia":     { "type": "number",  "default": 6.2, "min": 2, "max": 20 },
-    "magnet_depth":   { "type": "number",  "default": 3.1, "min": 1, "max": 15 },
-
-    "bail_enabled": { "type": "integer", "default": 1,   "min": 0, "max": 1 },
-    "bail_w":       { "type": "number",  "default": 10,  "min": 4, "max": 40 },
-    "bail_h":       { "type": "number",  "default": 7,   "min": 3, "max": 30 },
-    "bail_th":      { "type": "number",  "default": 3,   "min": 1, "max": 15 },
-    "bail_hole_d":  { "type": "number",  "default": 4,   "min": 1, "max": 20 },
-    "bail_gap":     { "type": "number",  "default": 0.6, "min": 0, "max": 5 },
-
-    "chain_style":    { "type": "string",  "default": "none", "options": ["none", "cuban", "round"] },
-    "chain_links":    { "type": "integer", "default": 8,    "min": 0,   "max": 60 },
-    "link_clearance": { "type": "number",  "default": 0.4,  "min": 0,   "max": 2 },
-    "link_thickness": { "type": "number",  "default": 3.2,  "min": 0.6, "max": 12 },
-    "link_xr":        { "type": "number",  "default": 4.6,  "min": 1,   "max": 30 },
-    "link_yr":        { "type": "number",  "default": 6.2,  "min": 1,   "max": 40 },
-    "link_cd":        { "type": "number",  "default": 3.4,  "min": 0.2, "max": 20 },
-    "link_ca":        { "type": "number",  "default": 45,   "min": 0,   "max": 89 },
-    "link_cut":       { "type": "number",  "default": 1.4,  "min": 0,   "max": 6 }
+    "letter": {
+      "type": "string",
+      "default": "J"
+    },
+    "font": {
+      "type": "string",
+      "default": ""
+    },
+    "letter_size": {
+      "type": "number",
+      "default": 26,
+      "min": 5,
+      "max": 200
+    },
+    "letter_depth": {
+      "type": "number",
+      "default": 1.6,
+      "min": 0.2,
+      "max": 10
+    },
+    "emboss": {
+      "type": "integer",
+      "default": 1,
+      "min": 0,
+      "max": 1
+    },
+    "letter_offset_x": {
+      "type": "number",
+      "default": 0,
+      "min": -50,
+      "max": 50
+    },
+    "letter_offset_y": {
+      "type": "number",
+      "default": 0,
+      "min": -50,
+      "max": 50
+    },
+    "plate_w": {
+      "type": "number",
+      "default": 40,
+      "min": 15,
+      "max": 200
+    },
+    "plate_h": {
+      "type": "number",
+      "default": 50,
+      "min": 15,
+      "max": 200
+    },
+    "plate_th": {
+      "type": "number",
+      "default": 4,
+      "min": 1.5,
+      "max": 20
+    },
+    "plate_radius": {
+      "type": "number",
+      "default": 4,
+      "min": 0,
+      "max": 30
+    },
+    "joint_enabled": {
+      "type": "integer",
+      "default": 1,
+      "min": 0,
+      "max": 1
+    },
+    "joint_w": {
+      "type": "number",
+      "default": 9,
+      "min": 3,
+      "max": 40
+    },
+    "joint_depth": {
+      "type": "number",
+      "default": 6,
+      "min": 2,
+      "max": 30
+    },
+    "joint_head": {
+      "type": "number",
+      "default": 13,
+      "min": 4,
+      "max": 50
+    },
+    "joint_clearance": {
+      "type": "number",
+      "default": 0.25,
+      "min": 0,
+      "max": 1.5
+    },
+    "end_left": {
+      "type": "integer",
+      "default": 0,
+      "min": 0,
+      "max": 1
+    },
+    "end_right": {
+      "type": "integer",
+      "default": 0,
+      "min": 0,
+      "max": 1
+    },
+    "magnet_enabled": {
+      "type": "integer",
+      "default": 1,
+      "min": 0,
+      "max": 1
+    },
+    "magnet_dia": {
+      "type": "number",
+      "default": 6.2,
+      "min": 2,
+      "max": 20
+    },
+    "magnet_depth": {
+      "type": "number",
+      "default": 3.1,
+      "min": 1,
+      "max": 15
+    },
+    "bail_enabled": {
+      "type": "integer",
+      "default": 1,
+      "min": 0,
+      "max": 1
+    },
+    "bail_w": {
+      "type": "number",
+      "default": 10,
+      "min": 4,
+      "max": 40
+    },
+    "bail_h": {
+      "type": "number",
+      "default": 7,
+      "min": 3,
+      "max": 30
+    },
+    "bail_th": {
+      "type": "number",
+      "default": 3,
+      "min": 1,
+      "max": 15
+    },
+    "bail_hole_d": {
+      "type": "number",
+      "default": 4,
+      "min": 1,
+      "max": 20
+    },
+    "bail_gap": {
+      "type": "number",
+      "default": 0.6,
+      "min": 0,
+      "max": 5
+    },
+    "chain_style": {
+      "type": "string",
+      "default": "none",
+      "options": [
+        "none",
+        "cuban",
+        "round"
+      ]
+    },
+    "chain_links": {
+      "type": "integer",
+      "default": 8,
+      "min": 0,
+      "max": 60
+    },
+    "link_clearance": {
+      "type": "number",
+      "default": 0.4,
+      "min": 0,
+      "max": 2
+    },
+    "link_thickness": {
+      "type": "number",
+      "default": 3.2,
+      "min": 0.6,
+      "max": 12
+    },
+    "link_xr": {
+      "type": "number",
+      "default": 4.6,
+      "min": 1,
+      "max": 30
+    },
+    "link_yr": {
+      "type": "number",
+      "default": 6.2,
+      "min": 1,
+      "max": 40
+    },
+    "link_cd": {
+      "type": "number",
+      "default": 3.4,
+      "min": 0.2,
+      "max": 20
+    },
+    "link_ca": {
+      "type": "number",
+      "default": 45,
+      "min": 0,
+      "max": 89
+    },
+    "link_cut": {
+      "type": "number",
+      "default": 1.4,
+      "min": 0,
+      "max": 6
+    },
+    "nfc_enabled": {
+      "type": "integer",
+      "default": 1,
+      "min": 0,
+      "max": 1
+    },
+    "nfc_dia": {
+      "type": "number",
+      "default": 26,
+      "min": 8,
+      "max": 60
+    },
+    "nfc_depth": {
+      "type": "number",
+      "default": 0.8,
+      "min": 0.2,
+      "max": 5
+    },
+    "nfc_cover": {
+      "type": "string",
+      "default": "sealed",
+      "options": [
+        "sealed",
+        "lid",
+        "open"
+      ]
+    },
+    "nfc_ceiling": {
+      "type": "number",
+      "default": 0.8,
+      "min": 0.2,
+      "max": 5
+    },
+    "nfc_lid_th": {
+      "type": "number",
+      "default": 1.0,
+      "min": 0.4,
+      "max": 5
+    },
+    "nfc_lid_gap": {
+      "type": "number",
+      "default": 0.2,
+      "min": 0,
+      "max": 1
+    },
+    "nfc_auto_x": {
+      "type": "integer",
+      "default": 1,
+      "min": 0,
+      "max": 1
+    },
+    "nfc_offset_x": {
+      "type": "number",
+      "default": 0,
+      "min": -60,
+      "max": 60
+    },
+    "nfc_offset_y": {
+      "type": "number",
+      "default": 0,
+      "min": -60,
+      "max": 60
+    },
+    "magnet_y": {
+      "type": "number",
+      "default": 15,
+      "min": 0,
+      "max": 80
+    }
   }
 }

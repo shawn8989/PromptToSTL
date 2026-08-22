@@ -24,10 +24,16 @@ plate_th     = 4;
 plate_radius = 4;
 
 /* [NFC pocket] */
-nfc_enabled = 1;
-nfc_dia     = 26;              // 25mm sticker + fit clearance
-nfc_depth   = 0.8;
-nfc_offset_y = -6;             // biased away from the bail
+nfc_enabled  = 1;
+nfc_dia      = 26;             // 25mm sticker + fit clearance
+nfc_depth    = 0.8;
+nfc_cover    = "sealed";       // open | sealed | lid
+nfc_ceiling  = 0.8;            // material left over a sealed pocket
+nfc_lid_th   = 1.0;            // thickness of the press-in lid
+nfc_lid_gap  = 0.2;            // lid fit clearance
+nfc_auto_x   = 1;              // 1 = auto-place clear of the jigsaw socket
+nfc_offset_x = 0;              // used when nfc_auto_x = 0
+nfc_offset_y = 0;
 
 /* [Jigsaw joint] */
 joint_enabled   = 1;
@@ -39,9 +45,14 @@ end_left        = 0;           // 1 = no socket (first letter of the word)
 end_right       = 0;           // 1 = no tab   (last letter of the word)
 
 /* [Magnets] */
+// Sunk into the flat plate faces, above and below the joint. Two mated plates
+// butt face to face there, so the magnets meet with only the joint clearance
+// between them. The previous placement sat outside the plate entirely and
+// removed no material at all.
 magnet_enabled = 1;
 magnet_dia     = 6.2;
 magnet_depth   = 3.1;
+magnet_y       = 15;           // offset from centre, clear of the joint head
 
 /* [Bail] */
 bail_enabled = 1;
@@ -89,6 +100,19 @@ module joint_profile_2d(grow = 0) {
   }
 }
 
+// How far the socket cavity reaches in from the -X plate edge.
+function socket_reach() = (joint_depth + joint_clearance) * 0.55
+                        + (joint_head + 2 * joint_clearance) / 2;
+
+// Left-hand limit of the region that is solid plate, i.e. safe for a pocket.
+function nfc_clear_min_x() =
+  (joint_enabled == 1 && end_left == 0) ? -plate_w / 2 + socket_reach()
+                                        : -plate_w / 2;
+
+// Centre the pocket in the clear region so the socket cannot bite into it.
+function nfc_cx() = nfc_auto_x == 1 ? (nfc_clear_min_x() + plate_w / 2) / 2
+                                    : nfc_offset_x;
+
 module text_2d() {
   translate([letter_offset_x, letter_offset_y])
     if (font == "")
@@ -118,6 +142,33 @@ module bail_body() {
   }
 }
 
+module nfc_void() {
+  // "open"   - recess in the back face, tag visible
+  // "lid"    - deeper recess, closed by a separate printed cap
+  // "sealed" - fully enclosed void; pause the print and drop the tag in
+  if (nfc_enabled == 1) {
+    if (nfc_cover == "sealed") {
+      translate([nfc_cx(), nfc_offset_y, -plate_th / 2 + nfc_ceiling])
+        cylinder(d = nfc_dia, h = nfc_depth);
+    } else {
+      depth = nfc_cover == "lid" ? nfc_depth + nfc_lid_th : nfc_depth;
+      translate([nfc_cx(), nfc_offset_y, -plate_th / 2 - 0.01])
+        cylinder(d = nfc_dia, h = depth + 0.01);
+    }
+  }
+}
+
+module magnet_voids() {
+  if (magnet_enabled == 1) {
+    for (side = [-1, 1])
+      for (y = [-magnet_y, magnet_y])
+        if (!(side < 0 && end_left == 1) && !(side > 0 && end_right == 1))
+          translate([side * plate_w / 2, y, 0])
+            rotate([0, 90, 0])
+              cylinder(d = magnet_dia, h = magnet_depth * 2, center = true);
+  }
+}
+
 module cutaways() {
   // Jigsaw socket on the -X edge.
   if (joint_enabled == 1 && end_left == 0)
@@ -125,28 +176,20 @@ module cutaways() {
       linear_extrude(height = plate_th + 2, center = true)
         joint_profile_2d(joint_clearance);
 
-  // NFC pocket, opening on the back face (-Z).
-  if (nfc_enabled == 1)
-    translate([0, nfc_offset_y, -plate_th / 2 - 0.01])
-      cylinder(d = nfc_dia, h = nfc_depth + 0.01);
-
-  // Magnet pockets: one in the tab, one behind the socket, so a tab meeting a
-  // socket puts two magnets face to face.
-  if (magnet_enabled == 1) {
-    if (end_right == 0)
-      translate([plate_w / 2 + joint_depth * 0.55, 0, 0])
-        rotate([0, 90, 0])
-          cylinder(d = magnet_dia, h = magnet_depth, center = true);
-    if (end_left == 0)
-      translate([-plate_w / 2 - joint_depth * 0.55, 0, 0])
-        rotate([0, 90, 0])
-          cylinder(d = magnet_dia, h = magnet_depth, center = true);
-  }
+  nfc_void();
+  magnet_voids();
 
   if (emboss == 0)
     translate([0, 0, plate_th / 2 - letter_depth])
       linear_extrude(height = letter_depth + 0.01)
         text_2d();
+}
+
+// Printed alongside the charm when nfc_cover = "lid".
+module nfc_lid() {
+  if (nfc_enabled == 1 && nfc_cover == "lid")
+    translate([nfc_cx(), nfc_offset_y - plate_h - 6, 0])
+      cylinder(d = nfc_dia - nfc_lid_gap, h = nfc_lid_th, center = true);
 }
 
 module charm() {
@@ -224,3 +267,4 @@ module chain_body() {
 
 charm();
 chain_body();
+nfc_lid();

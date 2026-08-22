@@ -39,6 +39,20 @@ class CharmsetError(RuntimeError):
     pass
 
 
+def nfc_fits(params: dict) -> tuple[bool, float]:
+    """Does the NFC pocket clear the jigsaw socket?
+
+    The socket is cut into the -X edge and reaches inward; a pocket centred on
+    the plate overlapped it and came out as a bitten-off circle. The template
+    auto-centres the pocket in the clear region, but on a narrow plate there
+    may simply be no room, and that must be said rather than silently cropped.
+    """
+    reach = (params["joint_depth"] + params["joint_clearance"]) * 0.55 \
+        + (params["joint_head"] + 2 * params["joint_clearance"]) / 2
+    available = params["plate_w"] - reach if params["joint_enabled"] else params["plate_w"]
+    return params["nfc_dia"] <= available, available
+
+
 def letter_filename(index: int, char: str) -> str:
     """Index-prefixed so repeated letters do not overwrite each other.
 
@@ -61,6 +75,25 @@ def build_params(schema: dict, char: str, size: str, is_first: bool, is_last: bo
     return params
 
 
+def write_assembled(letter_files: list[Path], plate_w: float, destination: Path) -> Path:
+    """One STL with every letter placed in reading order.
+
+    Individual files all load at the origin, so a slicer shows nine overlapping
+    parts and the intended order is anyone's guess. This lays them out spelling
+    the word, which is both the answer to "which order?" and a fit preview.
+    """
+    import trimesh
+
+    scene = []
+    for index, path in enumerate(letter_files):
+        mesh = trimesh.load_mesh(path, force="mesh")
+        mesh.apply_translation([index * plate_w, 0, 0])
+        scene.append(mesh)
+    combined = trimesh.util.concatenate(scene)
+    combined.export(destination)
+    return destination
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="charmset", description=__doc__)
     parser.add_argument("--text", required=True, help="the word, e.g. JOINLINKS")
@@ -72,6 +105,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--font", default=None)
     parser.add_argument("--no-nfc", action="store_true")
     parser.add_argument("--no-magnets", action="store_true")
+    parser.add_argument("--nfc-cover", default=None, choices=["sealed", "lid", "open"],
+                        help="sealed = fully enclosed, insert during a print pause")
+    parser.add_argument("--assembled", action="store_true",
+                        help="also write assembled.stl with the letters in reading order")
     args = parser.parse_args(argv)
 
     letters = [c for c in args.text if not c.isspace()]
@@ -92,9 +129,22 @@ def main(argv: list[str] | None = None) -> int:
         overrides["nfc_enabled"] = 0
     if args.no_magnets:
         overrides["magnet_enabled"] = 0
+    if args.nfc_cover is not None:
+        overrides["nfc_cover"] = args.nfc_cover
+
+    probe = build_params(schema, letters[0], args.size, True, False, overrides)
+    fits, available = nfc_fits(probe)
+    if probe["nfc_enabled"] and not fits:
+        print(
+            f"warning: a {probe['nfc_dia']}mm NFC pocket does not fit — only "
+            f"{available:.1f}mm of plate clears the jigsaw socket. Use a smaller tag, "
+            f"a wider plate, or --no-nfc.",
+            file=sys.stderr,
+        )
 
     out_dir = Path(args.out)
     out_dir.mkdir(parents=True, exist_ok=True)
+    written: list[Path] = []
     manifest: dict = {"text": args.text, "size": args.size, "template": TEMPLATE_ID, "letters": []}
     failures = 0
 
@@ -120,9 +170,15 @@ def main(argv: list[str] | None = None) -> int:
         else:
             print(f"  INVALID: {report.get('error')}", file=sys.stderr)
             failures += 1
+        written.append(destination)
         manifest["letters"].append({"index": index, "letter": char,
                                     "file": destination.name,
                                     "params": params, "report": report})
+
+    if args.assembled and written:
+        assembled = write_assembled(written, probe["plate_w"], out_dir / "assembled.stl")
+        print(f"assembled preview: {assembled.name} ({len(written)} letters in order)")
+        manifest["assembled"] = assembled.name
 
     (out_dir / "manifest.json").write_text(json.dumps(manifest, indent=2, sort_keys=True))
     print(f"\n{len(letters) - failures}/{len(letters)} letters written to {out_dir}")
