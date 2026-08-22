@@ -2,7 +2,7 @@
   "template_id": "letter_charm",
   "label": "Letter Charm (NFC + puzzle joint)",
   "scad_file": "model.scad",
-  "print_note": "Plate {plate_w}x{plate_h}mm. NFC pocket {nfc_dia}mm, cover mode '{nfc_cover}'. SEALED means the pocket is fully enclosed - pause the print near the top of the plate and drop the tag in. Jigsaw clearance {joint_clearance}mm; print two letters and tune before running a whole word. Magnet polarity must be consistent: every +X pocket one pole, every -X pocket the other, or half your letters will repel.",
+  "print_note": "Plate {plate_w}x{plate_h}x{plate_th}mm, joining '{join_mode}'. JIGSAW = tab and socket, no hardware. MAGNET = flat butt edges with {magnet_count} x {magnet_dia}mm slots per side; the slot diameter spans the plate thickness, so the plate must be at least magnet_dia + 2*magnet_wall thick or the slot breaks through both faces. Magnet polarity must be consistent: every +X pocket one pole, every -X pocket the other, or half your letters will repel. NFC pocket {nfc_dia}mm, cover '{nfc_cover}'; SEALED is fully enclosed - pause the print near the top of the plate and drop the tag in. Print two letters and tune the fit before a whole word.",
   "params": {
     "letter": {
       "type": "string",
@@ -66,11 +66,16 @@
       "min": 0,
       "max": 30
     },
-    "joint_enabled": {
-      "type": "integer",
-      "default": 1,
-      "min": 0,
-      "max": 1
+    "join_mode": {
+      "type": "string",
+      "default": "jigsaw",
+      "options": [
+        "jigsaw",
+        "magnet",
+        "both",
+        "none"
+      ],
+      "label": "How letters join"
     },
     "joint_w": {
       "type": "number",
@@ -108,21 +113,15 @@
       "min": 0,
       "max": 1
     },
-    "magnet_enabled": {
-      "type": "integer",
-      "default": 1,
-      "min": 0,
-      "max": 1
-    },
     "magnet_dia": {
       "type": "number",
-      "default": 6.2,
+      "default": 4,
       "min": 2,
       "max": 20
     },
     "magnet_depth": {
       "type": "number",
-      "default": 3.1,
+      "default": 2.1,
       "min": 1,
       "max": 15
     },
@@ -287,6 +286,20 @@
       "default": 15,
       "min": 0,
       "max": 80
+    },
+    "magnet_count": {
+      "type": "integer",
+      "default": 2,
+      "min": 1,
+      "max": 5,
+      "label": "Magnet slots per side"
+    },
+    "magnet_wall": {
+      "type": "number",
+      "default": 0.8,
+      "min": 0.4,
+      "max": 5,
+      "label": "Material over a magnet slot"
     }
   }
 }

@@ -87,6 +87,34 @@ assets/             # Screenshots and diagrams for README
 out/                # Generated builds (gitignored)
 ```
 
+## Letter charms (`charmset`)
+
+Render text as individual letter charms that assemble into words — each with an
+NFC pocket, a bail, and an optional chain.
+
+```bash
+python -m src.charmset.cli --text JOINLINKS --size large --assembled --out out/joinlinks
+python -m src.charmset.cli --text "JOIN LINKS" --join magnet --out out/two-words
+```
+
+`--join` picks **one** joining style; they are alternatives, not a stack:
+
+| Mode | Edge | Needs |
+|---|---|---|
+| `jigsaw` (default) | tab and socket | nothing |
+| `magnet` | flat butt, slots in the side faces | 4x2mm disc magnets |
+| `both` | tab, socket, and magnets | magnets |
+| `none` | rounded, standalone charms | nothing |
+
+Whitespace in `--text` separates words; each word is its own connected run and
+ends flat. `--assembled` writes a preview STL with everything laid out in
+reading order — a preview, not a print target.
+
+Two things that bite in the real world: magnet **polarity** must be consistent
+(every +X slot one pole, every -X slot the other) and the default `sealed` NFC
+cover needs a **print pause** to drop the tag in. Use `--nfc-cover lid` to avoid
+the pause.
+
 ## Notes
 - Geometry is always produced by OpenSCAD for deterministic, printable output.
 - The "Describe it" mode uses Anthropic Claude; manual mode works fully offline.

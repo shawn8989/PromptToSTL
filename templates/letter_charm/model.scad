@@ -35,8 +35,16 @@ nfc_auto_x   = 1;              // 1 = auto-place clear of the jigsaw socket
 nfc_offset_x = 0;              // used when nfc_auto_x = 0
 nfc_offset_y = 0;
 
-/* [Jigsaw joint] */
-joint_enabled   = 1;
+/* [Joining] */
+// How neighbouring letters attach. These are alternatives, not a stack:
+//   jigsaw  - tab and socket, mechanical hold, no hardware needed
+//   magnet  - flat butt edges with magnet slots in the side faces; letters
+//             snap together and the seam reads as one continuous word
+//   both    - jigsaw plus magnets, for a joint that aligns *and* snaps
+//   none    - standalone charms
+join_mode = "jigsaw";
+
+/* [Jigsaw geometry] */
 joint_w         = 9;           // neck width
 joint_depth     = 6;           // how far the tab protrudes
 joint_head      = 13;          // widest part of the head
@@ -45,14 +53,18 @@ end_left        = 0;           // 1 = no socket (first letter of the word)
 end_right       = 0;           // 1 = no tab   (last letter of the word)
 
 /* [Magnets] */
-// Sunk into the flat plate faces, above and below the joint. Two mated plates
-// butt face to face there, so the magnets meet with only the joint clearance
-// between them. The previous placement sat outside the plate entirely and
-// removed no material at all.
-magnet_enabled = 1;
-magnet_dia     = 6.2;
-magnet_depth   = 3.1;
-magnet_y       = 15;           // offset from centre, clear of the joint head
+// Slots in the flat side faces. Two mated plates meet there, so the magnets sit
+// directly against each other. In magnet mode the mating edges are squared off
+// and the slots spread over the plate height; with a jigsaw they stay clear of
+// the head.
+// A slot lies axis-along-X, so its DIAMETER spans the plate thickness: a 6mm
+// magnet in a 4mm plate cuts straight through both faces. 4x2mm discs fit a
+// 5.6mm plate; the CLI thickens the plate automatically when it has to.
+magnet_dia     = 4;
+magnet_depth   = 2.1;          // magnet thickness + a little
+magnet_wall    = 0.8;          // material left over the slot, front and back
+magnet_count   = 2;            // slots per side, magnet mode only
+magnet_y       = 15;           // offset from centre when a jigsaw head is present
 
 /* [Bail] */
 bail_enabled = 1;
@@ -78,6 +90,37 @@ $fs = 0.8;
 
 // ---------------------------------------------------------------- helpers
 
+// join_mode is the single control; these derive from it so the two joining
+// styles can never both be half-applied.
+joint_on  = (join_mode == "jigsaw" || join_mode == "both") ? 1 : 0;
+magnet_on = (join_mode == "magnet" || join_mode == "both") ? 1 : 0;
+
+function mates_left()  = (joint_on == 1 || magnet_on == 1) && end_left  == 0;
+function mates_right() = (joint_on == 1 || magnet_on == 1) && end_right == 0;
+
+// A rounded corner, or a sharp one when r is zero. Mating edges are squared off
+// so two butted plates meet along their whole height instead of touching only
+// in the middle with a lens-shaped gap at each corner.
+module corner_2d(x, y, r) {
+  r_eff = min(r, min(plate_w, plate_h) / 2);
+  if (r_eff <= 0.05)
+    translate([x - (x > 0 ? 0.01 : -0.01), y - (y > 0 ? 0.01 : -0.01)])
+      square(0.02, center = true);
+  else translate([x - (x > 0 ? r_eff : -r_eff), y - (y > 0 ? r_eff : -r_eff)])
+         circle(r = r_eff);
+}
+
+module plate_outline_2d() {
+  rl = mates_left()  ? 0 : plate_radius;
+  rr = mates_right() ? 0 : plate_radius;
+  hull() {
+    corner_2d(-plate_w / 2,  plate_h / 2, rl);
+    corner_2d(-plate_w / 2, -plate_h / 2, rl);
+    corner_2d( plate_w / 2,  plate_h / 2, rr);
+    corner_2d( plate_w / 2, -plate_h / 2, rr);
+  }
+}
+
 module rounded_rect_2d(width, height, radius) {
   r_eff = min(radius, min(width, height) / 2);
   hull() {
@@ -100,17 +143,32 @@ module joint_profile_2d(grow = 0) {
   }
 }
 
+// Magnet slot centres along Y. With a jigsaw head in the way they sit above and
+// below it; in magnet mode there is nothing to avoid, so they spread evenly.
+function magnet_limit() = plate_h / 2 - (magnet_dia / 2 + 2);
+function magnet_ys() =
+  let(lim = magnet_limit(), n = max(1, magnet_count))
+  lim <= 0                 ? []
+  : joint_on == 1          ? [-min(magnet_y, lim), min(magnet_y, lim)]
+  : n == 1                 ? [0]
+  :                          [for (i = [0 : n - 1]) -lim + i * (2 * lim) / (n - 1)];
+
 // How far the socket cavity reaches in from the -X plate edge.
 function socket_reach() = (joint_depth + joint_clearance) * 0.55
                         + (joint_head + 2 * joint_clearance) / 2;
 
-// Left-hand limit of the region that is solid plate, i.e. safe for a pocket.
-function nfc_clear_min_x() =
-  (joint_enabled == 1 && end_left == 0) ? -plate_w / 2 + socket_reach()
-                                        : -plate_w / 2;
+// Magnet slots eat into both side faces, so they bound the pocket region too.
+function magnet_reach() = magnet_on == 1 ? magnet_depth + 1 : 0;
 
-// Centre the pocket in the clear region so the socket cannot bite into it.
-function nfc_cx() = nfc_auto_x == 1 ? (nfc_clear_min_x() + plate_w / 2) / 2
+// The band of plate that is solid all the way through, i.e. safe for a pocket.
+function nfc_clear_min_x() =
+  -plate_w / 2 + max((joint_on == 1 && end_left == 0) ? socket_reach() : 0,
+                     mates_left() ? magnet_reach() : 0);
+function nfc_clear_max_x() =
+  plate_w / 2 - (mates_right() ? magnet_reach() : 0);
+
+// Centre the pocket in the clear region so nothing can bite into it.
+function nfc_cx() = nfc_auto_x == 1 ? (nfc_clear_min_x() + nfc_clear_max_x()) / 2
                                     : nfc_offset_x;
 
 module text_2d() {
@@ -125,8 +183,8 @@ module text_2d() {
 
 module plate_2d() {
   union() {
-    rounded_rect_2d(plate_w, plate_h, plate_radius);
-    if (joint_enabled == 1 && end_right == 0)
+    plate_outline_2d();
+    if (joint_on == 1 && end_right == 0)
       translate([plate_w / 2, 0]) joint_profile_2d(0);
   }
 }
@@ -159,19 +217,21 @@ module nfc_void() {
 }
 
 module magnet_voids() {
-  if (magnet_enabled == 1) {
+  if (magnet_on == 1 && plate_th < magnet_dia + 2 * magnet_wall)
+    echo(str("WARNING: magnet slot d=", magnet_dia, " breaks through a ",
+             plate_th, "mm plate; needs ", magnet_dia + 2 * magnet_wall, "mm"));
+  if (magnet_on == 1)
     for (side = [-1, 1])
-      for (y = [-magnet_y, magnet_y])
-        if (!(side < 0 && end_left == 1) && !(side > 0 && end_right == 1))
+      if (side < 0 ? mates_left() : mates_right())
+        for (y = magnet_ys())
           translate([side * plate_w / 2, y, 0])
             rotate([0, 90, 0])
               cylinder(d = magnet_dia, h = magnet_depth * 2, center = true);
-  }
 }
 
 module cutaways() {
   // Jigsaw socket on the -X edge.
-  if (joint_enabled == 1 && end_left == 0)
+  if (joint_on == 1 && end_left == 0)
     translate([-plate_w / 2, 0, 0])
       linear_extrude(height = plate_th + 2, center = true)
         joint_profile_2d(joint_clearance);
