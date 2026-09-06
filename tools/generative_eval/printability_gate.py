@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import json
 import sys
+import time
 from pathlib import Path
 
 import numpy as np
@@ -101,6 +102,11 @@ def solid_via_manifold(mesh: trimesh.Trimesh) -> tuple[bool, str]:
 
 
 def min_wall_thickness(mesh: trimesh.Trimesh, samples: int = THICKNESS_SAMPLES):
+    # Ray cost scales with face count. A 300k-face generated mesh at the full
+    # sample budget takes minutes; scale the budget down so the check stays
+    # informative without appearing to hang.
+    if len(mesh.faces) > 50_000:
+        samples = max(300, int(samples * 50_000 / len(mesh.faces)))
     """Approximate minimum wall by casting rays inward from the surface.
 
     Approximate on purpose: exact thickness needs a medial axis. This samples
@@ -253,13 +259,21 @@ def fidelity(before: trimesh.Trimesh, after: trimesh.Trimesh) -> dict:
 
 
 def evaluate(path: Path, check_thickness: bool = True) -> dict:
+    # Progress goes to stderr so stdout stays pure JSON. A dense mesh takes
+    # tens of seconds and silence is indistinguishable from a hang.
+    t0 = time.time()
+    print(f"  {path.name} ... ", end="", file=sys.stderr, flush=True)
     mesh = load_any(path)
     if mesh is None:
+        print("unreadable", file=sys.stderr, flush=True)
         return {"file": path.name, "loadable": False, "verdict": "unsalvageable"}
 
+    print(f"{len(mesh.faces)} faces ... ", end="", file=sys.stderr, flush=True)
     checks = run_gate(mesh, check_thickness)
     failed = [c["name"] for c in checks if not c["pass"]]
     if not failed:
+        print(f"pass_unmodified ({time.time() - t0:.1f}s)",
+              file=sys.stderr, flush=True)
         return {"file": path.name, "loadable": True, "verdict": "pass_unmodified",
                 "checks": checks, "failed": []}
 
@@ -267,10 +281,12 @@ def evaluate(path: Path, check_thickness: bool = True) -> dict:
     checks_after = run_gate(fixed, check_thickness)
     failed_after = [c["name"] for c in checks_after if not c["pass"]]
 
+    verdict = "pass_after_repair" if not failed_after else "unsalvageable"
+    print(f"{verdict} ({time.time() - t0:.1f}s)", file=sys.stderr, flush=True)
     return {
         "file": path.name,
         "loadable": True,
-        "verdict": "pass_after_repair" if not failed_after else "unsalvageable",
+        "verdict": verdict,
         "failed_before": failed,
         "failed_after": failed_after,
         "repair_actions": actions,
