@@ -15,7 +15,7 @@ thickness and genus as first-class rather than trusting watertightness.
 ## Use
 
 ```bash
-pip install huggingface_hub trimesh numpy scipy manifold3d rtree scikit-image
+pip install huggingface_hub trimesh numpy scipy manifold3d rtree scikit-image networkx
 python3 fetch_arena_meshes.py ./arena
 python3 printability_gate.py ./arena
 ```
@@ -36,10 +36,12 @@ generative path is a feature or a demo.
 
 ## Known limits
 
-- Scale cannot be gated. A generated mesh is unit-normalised and its real
-  size is unknowable by inspection; `plausible_mm_scale` catches only the
-  obvious case. Real size has to be supplied, exactly as `tapgraft` requires
-  a caliper-measured `--height`.
+- Scale is normalised, not judged. Generated meshes are unit-normalised, so
+  every mesh is scaled to `TARGET_MM` (60 mm) before geometry is checked.
+  Gating on delivered size would fail every generated mesh on a trivially
+  fixable property and hide whether the geometry is sound. Real size still
+  has to be supplied, exactly as `tapgraft` requires a caliper-measured
+  `--height`; this tool cannot establish it.
 - `min_wall_thickness` is sampled, not exact; exact thickness needs a medial
   axis. It is sized to catch paper-thin shells, not to certify a wall.
 - trimesh's `fill_holes` closes only 3- and 4-edge holes, so the repair stage

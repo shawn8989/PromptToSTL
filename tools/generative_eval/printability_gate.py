@@ -21,7 +21,10 @@ import trimesh
 # A print is judged in millimetres. A generative model emits a unit-normalised
 # mesh with no real-world scale, so this range only asserts "plausible object",
 # not "correct size" -- correct size can only come from a measurement.
-MIN_PLAUSIBLE_MM, MAX_PLAUSIBLE_MM = 5.0, 500.0
+# Generated meshes arrive unit-normalised. Every mesh is scaled to this size
+# before geometry is judged, so thickness is measured on the object someone
+# would actually print rather than on an arbitrary normalisation.
+TARGET_MM = 60.0
 MIN_WALL_MM = 0.8          # two perimeters of a 0.4 mm nozzle
 # Genus counts handles/tunnels. A decorative trinket is genus 0-2; a mug is 1.
 # Voxel-remesh noise pushes it into the dozens, so a generous ceiling flags
@@ -173,17 +176,6 @@ def run_gate(mesh: trimesh.Trimesh, check_thickness: bool = True) -> list[dict]:
         add("plausible_genus", genus <= MAX_PLAUSIBLE_GENUS, genus,
             f"<= {MAX_PLAUSIBLE_GENUS}")
 
-    # This is a smell test, not a scale check. A generative mesh is
-    # unit-normalised, so it usually lands at 1-2 mm and is caught here -- but a
-    # mesh that happens to fall inside the range is still of unknown real size.
-    # Only a supplied measurement establishes scale; tapgraft already refuses to
-    # infer it, and this pipeline must not either.
-    extents = np.asarray(mesh.extents, dtype=float)
-    largest = float(extents.max()) if extents.size else 0.0
-    plausible = MIN_PLAUSIBLE_MM <= largest <= MAX_PLAUSIBLE_MM
-    add("plausible_mm_scale", plausible, round(largest, 4),
-        f"{MIN_PLAUSIBLE_MM}-{MAX_PLAUSIBLE_MM} mm")
-
     if check_thickness:
         wall = min_wall_thickness(mesh)
         if wall is None or isinstance(wall, str):
@@ -258,7 +250,8 @@ def fidelity(before: trimesh.Trimesh, after: trimesh.Trimesh) -> dict:
     return result
 
 
-def evaluate(path: Path, check_thickness: bool = True) -> dict:
+def evaluate(path: Path, check_thickness: bool = True,
+             target_mm: float = TARGET_MM) -> dict:
     # Progress goes to stderr so stdout stays pure JSON. A dense mesh takes
     # tens of seconds and silence is indistinguishable from a hang.
     t0 = time.time()
@@ -268,6 +261,14 @@ def evaluate(path: Path, check_thickness: bool = True) -> dict:
         print("unreadable", file=sys.stderr, flush=True)
         return {"file": path.name, "loadable": False, "verdict": "unsalvageable"}
 
+    # A generated mesh is unit-normalised and carries no real-world size, so
+    # judging wall thickness as delivered measures the normalisation, not the
+    # geometry. Scale to a realistic finished size first; real size still has
+    # to come from a measurement, exactly as tapgraft demands --height.
+    original_mm = float(np.asarray(mesh.extents).max())
+    if original_mm > 0:
+        mesh.apply_scale(target_mm / original_mm)
+
     print(f"{len(mesh.faces)} faces ... ", end="", file=sys.stderr, flush=True)
     checks = run_gate(mesh, check_thickness)
     failed = [c["name"] for c in checks if not c["pass"]]
@@ -275,6 +276,8 @@ def evaluate(path: Path, check_thickness: bool = True) -> dict:
         print(f"pass_unmodified ({time.time() - t0:.1f}s)",
               file=sys.stderr, flush=True)
         return {"file": path.name, "loadable": True, "verdict": "pass_unmodified",
+                "as_delivered_mm": round(original_mm, 4),
+                "scaled_to_mm": target_mm,
                 "checks": checks, "failed": []}
 
     fixed, actions = repair(mesh)
@@ -287,6 +290,8 @@ def evaluate(path: Path, check_thickness: bool = True) -> dict:
         "file": path.name,
         "loadable": True,
         "verdict": verdict,
+        "as_delivered_mm": round(original_mm, 4),
+        "scaled_to_mm": target_mm,
         "failed_before": failed,
         "failed_after": failed_after,
         "repair_actions": actions,
@@ -308,6 +313,8 @@ def main(argv: list[str]) -> int:
         elif p.is_file():
             paths.append(p)
 
+    print(f"scaling every mesh to {TARGET_MM:.0f} mm before judging geometry\n",
+          file=sys.stderr, flush=True)
     results = [evaluate(p) for p in paths]
     tally: dict[str, int] = {}
     for r in results:
