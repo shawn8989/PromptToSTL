@@ -25,6 +25,10 @@ import trimesh
 # before geometry is judged, so thickness is measured on the object someone
 # would actually print rather than on an arbitrary normalisation.
 TARGET_MM = 60.0
+# Repair that changes the solid by more than this is no longer repairing the
+# object the user asked for. Filling an intended cavity, for instance, reads
+# as a clean pass on every topology check while producing a different thing.
+MAX_REPAIR_VOLUME_CHANGE_PCT = 25.0
 MIN_WALL_MM = 0.8          # two perimeters of a 0.4 mm nozzle
 # Genus counts handles/tunnels. A decorative trinket is genus 0-2; a mug is 1.
 # Voxel-remesh noise pushes it into the dozens, so a generous ceiling flags
@@ -187,6 +191,43 @@ def run_gate(mesh: trimesh.Trimesh, check_thickness: bool = True) -> list[dict]:
     return checks
 
 
+def union_components(mesh: trimesh.Trimesh) -> trimesh.Trimesh | None:
+    """Boolean-union disjoint bodies into one solid.
+
+    Generative models ship a GLB as a scene of separate sub-meshes -- a body,
+    two eyes, a base -- which flatten into one mesh holding several
+    disconnected bodies. Rejecting that as multi-component measures the file
+    layout, not the geometry: the parts usually overlap and union cleanly into
+    exactly the object the user asked for. This is the repair a real pipeline
+    performs, so the gate has to attempt it before condemning the mesh.
+    """
+    try:
+        import manifold3d
+    except Exception:
+        return None
+    try:
+        solids = []
+        for part in mesh.split(only_watertight=False):
+            if len(part.faces) == 0:
+                continue
+            solids.append(manifold3d.Manifold(manifold3d.Mesh(
+                vert_properties=np.asarray(part.vertices, dtype=np.float32),
+                tri_verts=np.asarray(part.faces, dtype=np.uint32))))
+        if len(solids) < 2:
+            return None
+        combined = solids[0]
+        for extra in solids[1:]:
+            combined = combined + extra
+        out_mesh = combined.to_mesh()
+        united = trimesh.Trimesh(
+            vertices=np.asarray(out_mesh.vert_properties)[:, :3],
+            faces=np.asarray(out_mesh.tri_verts), process=False)
+        united.merge_vertices()
+        return united if len(united.faces) else None
+    except Exception:
+        return None
+
+
 def repair(mesh: trimesh.Trimesh) -> tuple[trimesh.Trimesh, list[str]]:
     """Standard automated repair, recording every action it took."""
     actions: list[str] = []
@@ -207,6 +248,14 @@ def repair(mesh: trimesh.Trimesh) -> tuple[trimesh.Trimesh, list[str]]:
     if not out.is_winding_consistent:
         trimesh.repair.fix_winding(out)
         actions.append("fixed inconsistent winding")
+
+    if int(out.body_count) > 1:
+        bodies = int(out.body_count)
+        united = union_components(out)
+        if united is not None and int(united.body_count) < bodies:
+            out = united
+            actions.append(f"boolean-unioned {bodies} disjoint bodies into "
+                           f"{int(out.body_count)}")
 
     if not out.is_watertight:
         holes_before = open_boundary_edges(out)
@@ -284,7 +333,19 @@ def evaluate(path: Path, check_thickness: bool = True,
     checks_after = run_gate(fixed, check_thickness)
     failed_after = [c["name"] for c in checks_after if not c["pass"]]
 
-    verdict = "pass_after_repair" if not failed_after else "unsalvageable"
+    fid = fidelity(mesh, fixed)
+    vol_change = fid.get("volume_change_pct")
+    fidelity_lost = (vol_change is not None
+                     and abs(vol_change) > MAX_REPAIR_VOLUME_CHANGE_PCT)
+
+    if failed_after:
+        verdict = "unsalvageable"
+    elif fidelity_lost:
+        # Topologically clean, but no longer the object that went in.
+        verdict = "unsalvageable"
+        failed_after = [f"repair_changed_volume_{vol_change:+.0f}pct"]
+    else:
+        verdict = "pass_after_repair"
     print(f"{verdict} ({time.time() - t0:.1f}s)", file=sys.stderr, flush=True)
     return {
         "file": path.name,
@@ -295,7 +356,7 @@ def evaluate(path: Path, check_thickness: bool = True,
         "failed_before": failed,
         "failed_after": failed_after,
         "repair_actions": actions,
-        "fidelity": fidelity(mesh, fixed),
+        "fidelity": fid,
         "checks": checks_after,
     }
 
