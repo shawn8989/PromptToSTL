@@ -9,8 +9,22 @@ Files in this directory are tracked in git despite the global `*.stl` rule in
 
 ## `tap-handle-base-28mm.stl`
 
-The standard base for custom 3D-printed beer tap handles. Generated geometry —
-not derived from any third-party or client model.
+The standard base for custom 3D-printed beer tap handles.
+
+> [!warning] Provenance — corrected 2026-09-27
+> An earlier version of this file said "Generated geometry — not derived from any
+> third-party or client model." **That was wrong.** This mesh was produced by
+> trimming a downloaded third-party model (`obj_1_fINAL BEER HANDLE 2.stl_A.stl`,
+> a complete 178.6 mm handle) at z = 28 mm with a manifold3d boolean, preserving
+> its threaded section untouched. The dimensions below match that trim exactly.
+>
+> The threads in particular are **not** original work — they are the source
+> model's, which is precisely why they are useful. Shawn recalls downloading the
+> source but the licence has not been established. Until it is, treat this file as
+> third-party derived: **this repository is public**, and `.gitignore` carries a
+> deliberate `!assets/bases/*.stl` negation that includes it. If the licence turns
+> out to be non-commercial or share-alike, that affects both this repo and any
+> paid work printed from it.
 
 Measured with `trimesh` (units are millimetres):
 

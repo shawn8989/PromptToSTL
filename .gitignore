@@ -18,6 +18,21 @@ out/
 *.3mf
 *.scad~
 *.scad.bak
+# Scan-derived formats. tapgraft-color exports a client scan's colour as
+# PLY/GLB, and Object Capture produces USDZ plus HEIC/JPEG source photos.
+# AGENTS.md forbids committing client scans; without these rules that was
+# enforced by habit alone.
+*.ply
+*.glb
+*.gltf
+*.usdz
+*.usda
+*.usdc
+*.heic
+*.heif
+*.jpg
+*.jpeg
+*.png
 uploads/
 previews/
 thumbnails/
